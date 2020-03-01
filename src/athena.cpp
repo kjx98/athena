@@ -554,7 +554,7 @@ evmc_capabilities_flagset athena_get_capabilities(evmc_vm* instance)
 
 extern "C" {
 
-evmc_vm* evmc_create_athena() noexcept
+EVMC_EXPORT evmc_vm* evmc_create_athena() noexcept
 {
   athena_instance* instance = new athena_instance;
   instance->destroy = athena_destroy;
