@@ -1,32 +1,22 @@
-# Prerequisites
-*.d
+# CMake
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# CMake build dir
+/build
 
-# Precompiled Headers
-*.gch
-*.pch
+# IntelliJ
+/.idea
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+# Extra deps
+/deps
 
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+# Vim swap files
+**/*.swp
