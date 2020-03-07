@@ -127,6 +127,8 @@ protected:
   // EEI methods
 
 #if H_DEBUGGING
+  void debugPrint32(uint32_t value);
+  void debugPrint64(uint64_t value);
   void debugPrint(uint32_t offset, uint32_t length);
   void debugPrintMem(bool useHex, uint32_t offset, uint32_t length);
   void debugPrintStorage(bool useHex, uint32_t pathOffset);

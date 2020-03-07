@@ -607,6 +607,34 @@ ExecutionResult WabtEngine::execute(
   );
 
   hostModule->AppendFuncExport(
+    "print32",
+    {{Type::I32}, {}},
+    [&interface](
+      const interp::HostFunc*,
+      const interp::FuncSignature*,
+      const interp::TypedValues& args,
+      interp::TypedValues&
+    ) {
+      interface.debugPrint32(args[0].value.i32);
+      return interp::Result::Ok;
+    }
+  );
+
+  hostModule->AppendFuncExport(
+    "print64",
+    {{Type::I64}, {}},
+    [&interface](
+      const interp::HostFunc*,
+      const interp::FuncSignature*,
+      const interp::TypedValues& args,
+      interp::TypedValues&
+    ) {
+      interface.debugPrint64(args[0].value.i64);
+      return interp::Result::Ok;
+    }
+  );
+
+  hostModule->AppendFuncExport(
     "printMem",
     {{Type::I32, Type::I32}, {}},
     [&interface](
@@ -1172,6 +1200,32 @@ void WabtEngine::verifyContract(bytes_view code) {
   hostModule->AppendFuncExport(
     "print",
     {{Type::I32, Type::I32}, {}},
+    [&](
+      const interp::HostFunc*,
+      const interp::FuncSignature*,
+      const interp::TypedValues&,
+      interp::TypedValues&
+    ) {
+      return interp::Result::Ok;
+    }
+  );
+
+  hostModule->AppendFuncExport(
+    "print32",
+    {{Type::I32}, {}},
+    [&](
+      const interp::HostFunc*,
+      const interp::FuncSignature*,
+      const interp::TypedValues&,
+      interp::TypedValues&
+    ) {
+      return interp::Result::Ok;
+    }
+  );
+
+  hostModule->AppendFuncExport(
+    "print64",
+    {{Type::I64}, {}},
     [&](
       const interp::HostFunc*,
       const interp::FuncSignature*,

@@ -1,4 +1,4 @@
-# Athena ![Status](https://circleci.com/shbta/athena.svg?style=shield&circle-token=:circle-token)
+# Athena [![Status](https://travis-ci.org/shbta/athena.svg?branch=master)](https://travis-ci.org/shbta/athena)
 
 Athena is an [ewasm] (revision 4) virtual machine implemented in C++ conforming to [EVMC] ABIv7.
 
@@ -56,7 +56,7 @@ Please also check the build options listed in the following section.
 
 These are to be used via EVMC `set_option`:
 
-- `engine=<engine>` will select the underlying WebAssembly engine, where the only accepted values currently are `binaryen`, `wabt`, and `wavm`
+- `engine=<engine>` will select the underlying WebAssembly engine, where the only accepted values currently are `wabt`, and `wavm`
 - `metering=true` will enable metering of bytecode at deployment using the [Sentinel system contract] (set to `false` by default)
 - `benchmark=true` will produce execution timings and output it to both standard error output and `athena_benchmarks.log` file.
 - `evm1mode=<evm1mode>` will select how EVM1 bytecode is handled

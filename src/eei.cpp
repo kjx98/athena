@@ -63,6 +63,18 @@ void WasmEngine::collectBenchmarkingData()
 }
 
 #if H_DEBUGGING
+  void EthereumInterface::debugPrint32(uint32_t value)
+  {
+	H_DEBUG << "DEBUG print32: " << value << " " << hex << "0x" << value
+			<< dec << endl;
+  }
+
+  void EthereumInterface::debugPrint64(uint64_t value)
+  {
+	H_DEBUG << "DEBUG print64: " << value << " " << hex << "0x" << value
+			<< dec << endl;
+  }
+
   void EthereumInterface::debugPrint(uint32_t offset, uint32_t length)
   {
       athenaAssert((offset + length) > offset, "Overflow.");
