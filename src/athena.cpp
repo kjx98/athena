@@ -29,8 +29,8 @@
 #include "eei.h"
 #include "exceptions.h"
 #include "helpers.h"
-#if H_WAVM
-#include "wavm.h"
+#if H_EOS
+#include "eosvm.h"
 #endif
 #if H_WABT
 #include "wabt.h"
@@ -60,8 +60,8 @@ const map<string, athena_evm1mode> evm1mode_options {
 using WasmEngineCreateFn = unique_ptr<WasmEngine>(*)();
 
 const map<string, WasmEngineCreateFn> wasm_engine_map {
-#if H_WAVM
-  { "wavm", WavmEngine::create },
+#if H_EOS
+  { "eosvm", EOSvmEngine::create },
 #endif
 #if H_WABT
   { "wabt", WabtEngine::create },
@@ -72,8 +72,8 @@ WasmEngineCreateFn wasmEngineCreateFn =
 // This is the order of preference.
 #if H_WABT
     WabtEngine::create
-#elif H_WAVM
-    WavmEngine::create
+#elif H_EOS
+    EOSvmEngine::create
 #else
 #error "No engine requested."
 #endif
@@ -385,7 +385,7 @@ evmc_result athena_execute(
           "Invalid contract or metering failed."
         );
         // FIXME: this should be done by the sentinel
-        engine.verifyContract({returnValue.data(), returnValue.size()});
+		// no verifyContract
       } else {
         returnValue = move(result.returnValue);
       }

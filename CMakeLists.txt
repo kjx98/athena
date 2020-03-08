@@ -41,13 +41,17 @@ if(ATHENA_FUZZING)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${fuzzer_flags}")
 endif()
 
-
 option(H_WABT "Build with wabt" ON)
 if (H_WABT)
     include(ProjectWabt)
 endif()
 
-if (NOT (H_WABT OR H_WAVM))
+option(H_EOS "Build with eos-vm" OFF)
+if (H_EOS)
+		include(ProjectEOS)
+endif()
+
+if (NOT (H_WABT OR H_EOS))
     message(FATAL_ERROR "At least one one engine must be enabled.")
 endif()
 
@@ -59,7 +63,6 @@ else()
 endif()
 
 #add_subdirectory(evmc)
-#add_subdirectory(wabt)
 add_subdirectory(src)
 add_subdirectory(test)
 

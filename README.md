@@ -43,20 +43,19 @@ Please also check the build options listed in the following section.
 
 - `-DH_WABT=OFF`
 
-### WAVM support
+### EOS VM support
 
-*Complete support.*
+*TODO -- Complete support.*
 
-[WAVM] support needs to be enabled via the following build option and requested at runtime with `engine=wavm`:
+[EOS-VM] support needs to be enabled via the following build option and requested at runtime with `engine=eosvm`:
 
-- `-DH_WAVM=ON` will request the compilation of WAVM support
-- `-DLLVM_DIR=...` one will need to specify the path to LLVM's CMake file. In most installations this has to be within the `lib/cmake/llvm` directory, such as `/usr/local/Cellar/llvm/6.0.1/lib/cmake/llvm` on Homebrew.
+- `-DH_EOS=ON` will request the compilation of WAVM support
 
 ## Runtime options
 
 These are to be used via EVMC `set_option`:
 
-- `engine=<engine>` will select the underlying WebAssembly engine, where the only accepted values currently are `wabt`, and `wavm`
+- `engine=<engine>` will select the underlying WebAssembly engine, where the only accepted values currently are `wabt`, and `eosvm`
 - `metering=true` will enable metering of bytecode at deployment using the [Sentinel system contract] (set to `false` by default)
 - `benchmark=true` will produce execution timings and output it to both standard error output and `athena_benchmarks.log` file.
 - `evm1mode=<evm1mode>` will select how EVM1 bytecode is handled
@@ -117,9 +116,9 @@ Apache 2.0
 [EVMC]: https://github.com/ethereum/evmc
 [aleth]: https://github.com/ethereum/aleth
 [geth]: https://github.com/ethereum/go-ethereum
-[Binaryen]: https://github.com/webassembly/binaryen
+[encore]: https://github.com/shbta/encore
 [wabt]: https://github.com/webassembly/wabt
-[WAVM]: https://github.com/WAVM/WAVM
+[EOS VM]: https://github.com/eosio/eos-vm
 [Sentinel system contract]: https://github.com/ewasm/design/blob/master/system_contracts.md#sentinel-contract
 [EVM Transcompiler]: https://github.com/ewasm/design/blob/master/system_contracts.md#evm-transcompiler
 [EEI]: https://github.com/ewasm/design/blob/master/eth_interface.md

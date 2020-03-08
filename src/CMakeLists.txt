@@ -20,8 +20,8 @@ if(H_WABT)
   target_sources(athena PRIVATE wabt.cpp wabt.h)
 endif()
 
-if(H_WAVM)
-  target_sources(athena PRIVATE wavm.cpp wavm.h)
+if(H_EOS)
+  target_sources(athena PRIVATE eosvm.cpp eosvm.h)
 endif()
 
 option(H_DEBUGGING "Display debugging messages during execution." ON)

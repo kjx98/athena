@@ -50,8 +50,6 @@ public:
     bool meterInterfaceGas
   ) = 0;
 
-  virtual void verifyContract(bytes_view code) = 0;
-
   static void enableBenchmarking() noexcept { benchmarkingEnabled = true; }
 
 protected:

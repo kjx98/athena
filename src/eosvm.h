@@ -1,6 +1,5 @@
 /*
- * Copyright 2018 Paul Dworzanski
- * Copyright 2016-2018 Alex Beregszaszi et al.
+ * Copyright 2019 Jesse Kuang
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +18,10 @@
 
 #include "eei.h"
 
-namespace IR {
-class Module;
-}
 
 namespace athena {
 
-class WavmEngine : public WasmEngine {
+class EOSvmEngine : public WasmEngine {
 public:
   /// Factory method to create the WAVM Wasm Engine.
   static std::unique_ptr<WasmEngine> create();
@@ -49,7 +45,6 @@ private:
     bool meterInterfaceGas
   );
 
-  IR::Module parseModule(bytes_view code);
 };
 
 } // namespace athena
