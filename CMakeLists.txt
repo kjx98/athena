@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-if(NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake/cable/.git)
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/wabt/.git OR NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake/cable/.git)
     message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init")
 endif()
 
@@ -11,8 +11,6 @@ include(CableCompilerSettings)
 include(CableToolchains)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
-
-include(Hunter/init)
 
 cable_configure_toolchain(DEFAULT cxx17-pic)
 
@@ -49,11 +47,6 @@ if (H_WABT)
     include(ProjectWabt)
 endif()
 
-option(H_WAVM "Build with WAVM" OFF)
-if (H_WAVM)
-    include(ProjectWAVM)
-endif()
-
 if (NOT (H_WABT OR H_WAVM))
     message(FATAL_ERROR "At least one one engine must be enabled.")
 endif()
@@ -64,7 +57,9 @@ if (evmc_FOUND)
 else()
 	message(FATAL_ERROR "evmc not FOUND")
 endif()
+
 #add_subdirectory(evmc)
+#add_subdirectory(wabt)
 add_subdirectory(src)
 add_subdirectory(test)
 

@@ -5,22 +5,18 @@ set(ProjectWabtIncluded TRUE)
 
 include(ExternalProject)
 
-set(prefix ${CMAKE_BINARY_DIR}/deps)
-set(source_dir ${prefix}/src/wabt)
-set(binary_dir ${prefix}/src/wabt-build)
+set(prefix ${CMAKE_BINARY_DIR})
+set(source_dir ${CMAKE_SOURCE_DIR}/wabt)
+set(binary_dir ${CMAKE_BINARY_DIR}/wabt)
 set(include_dir ${source_dir})
 set(wabt_library ${binary_dir}/${CMAKE_STATIC_LIBRARY_PREFIX}wabt${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 ExternalProject_Add(wabt
-    PREFIX ${prefix}
-    DOWNLOAD_NAME wabt-1.0.12.tar.gz
-    DOWNLOAD_DIR ${prefix}/downloads
+#    PREFIX ${prefix}
     SOURCE_DIR ${source_dir}
     BINARY_DIR ${binary_dir}
-    URL https://github.com/WebAssembly/wabt/archive/1.0.12.tar.gz
-    URL_HASH SHA256=5333949ed4ae63808afa0d1f7d627cd7485ebeec339590571e5f2cb21e304f79
     CMAKE_ARGS
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+	-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DCMAKE_BUILD_TYPE=Release
     -DWITH_EXCEPTIONS=ON
     -DBUILD_TESTS=OFF
@@ -28,7 +24,7 @@ ExternalProject_Add(wabt
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     -DCMAKE_CXX_FLAGS=-fvisibility=hidden
     -DCMAKE_C_FLAGS=-fvisibility=hidden
-    INSTALL_COMMAND ""
+	INSTALL_COMMAND ""
     BUILD_BYPRODUCTS ${wabt_library}
 )
 
@@ -38,7 +34,7 @@ set_target_properties(
     wabt::wabt
     PROPERTIES
     IMPORTED_CONFIGURATIONS Release
-    IMPORTED_LOCATION_RELEASE ${wabt_library}
+	IMPORTED_LOCATION_RELEASE ${wabt_library}
     INTERFACE_INCLUDE_DIRECTORIES "${include_dir};${binary_dir}"
 )
 

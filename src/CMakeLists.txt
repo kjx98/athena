@@ -1,7 +1,7 @@
 find_package(Threads REQUIRED)
 
-hunter_add_package(intx)
-find_package(intx CONFIG REQUIRED)
+#hunter_add_package(intx)
+#find_package(intx CONFIG REQUIRED)
 
 set(athena_include_dir ${PROJECT_SOURCE_DIR}/include)
 get_filename_component(evmc_include_dir .. ABSOLUTE)
@@ -32,7 +32,7 @@ endif()
 target_include_directories(athena
     PUBLIC $<BUILD_INTERFACE:${athena_include_dir}>$<INSTALL_INTERFACE:include>
 )
-target_link_libraries(athena PUBLIC evmc::evmc PRIVATE athena-buildinfo evmc::instructions intx::intx)
+target_link_libraries(athena PUBLIC evmc::evmc PRIVATE athena-buildinfo evmc::instructions )
 if(NOT WIN32)
   if(CMAKE_COMPILER_IS_GNUCXX)
     set_target_properties(athena PROPERTIES LINK_FLAGS "-Wl,--no-undefined")
