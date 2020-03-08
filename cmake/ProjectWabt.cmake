@@ -12,7 +12,7 @@ set(include_dir ${source_dir})
 set(wabt_library ${binary_dir}/${CMAKE_STATIC_LIBRARY_PREFIX}wabt${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 ExternalProject_Add(wabt
-#    PREFIX ${prefix}
+    PREFIX ${prefix}
     SOURCE_DIR ${source_dir}
     BINARY_DIR ${binary_dir}
     CMAKE_ARGS
