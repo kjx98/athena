@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmc/.git OR NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake/cable/.git)
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake/cable/.git)
     message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init")
 endif()
 
@@ -58,7 +58,13 @@ if (NOT (H_WABT OR H_WAVM))
     message(FATAL_ERROR "At least one one engine must be enabled.")
 endif()
 
-add_subdirectory(evmc)
+find_package(evmc)
+if (evmc_FOUND)
+	message(STATUS "evmc FOUND")
+else()
+	message(FATAL_ERROR "evmc not FOUND")
+endif()
+#add_subdirectory(evmc)
 add_subdirectory(src)
 add_subdirectory(test)
 
