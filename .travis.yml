@@ -1,0 +1,38 @@
+dist: bonic
+language: cpp
+sudo: required
+addons:
+  apt:
+    packages:
+    - git
+    - cmake
+    - ccache
+
+branches:
+  only:
+  - master
+
+before_install:
+  - sudo apt-get update -q
+
+install:
+  - mkdir build
+  - git submodule update --init
+  - git clone https://github.com/shbta/encore
+  - git clone https://github.com/ethereum/evmc
+  - mkdir evmc/build
+  - cd evmc/build
+  - cmake ..
+  - make
+  - sudo make install
+  - cd ../..
+
+script:
+  - cd build
+  - cmake ..
+  - make
+  - sudo cp src/libathena.so /lib64
+  - sudo ldconfig
+  - cd ..
+  - cd encore
+  - go test -v -tags=evmc ./core/vm/runtime
