@@ -1,5 +1,5 @@
 dist: bonic
-language: cpp
+language: go
 sudo: required
 addons:
   apt:
@@ -7,6 +7,8 @@ addons:
     - git
     - cmake
     - ccache
+go:
+  - "1.13.x"
 
 branches:
   only:
@@ -16,8 +18,6 @@ before_install:
   - sudo apt-get update -q
 
 install:
-  - mkdir build
-  - git submodule update --init
   - git clone https://github.com/shbta/encore
   - git clone https://github.com/ethereum/evmc
   - mkdir evmc/build
@@ -26,12 +26,13 @@ install:
   - make
   - sudo make install
   - cd ../..
+  - mkdir build
 
 script:
   - cd build
   - cmake ..
   - make
-  - sudo cp src/libathena.so /lib64
+  - sudo cp src/libathena.so /usr/local/lib
   - sudo ldconfig
   - cd ..
   - cd encore

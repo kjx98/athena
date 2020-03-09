@@ -1,4 +1,7 @@
-# Athena [![Build Status](https://travis-ci.org/shbta/athena.svg?branch=master)](https://travis-ci.org/shbta/athena)
+# Athena
+==========
+
+[![Build Status](https://travis-ci.org/kjx98/athena.svg?branch=master)](https://travis-ci.org/kjx98/athena)
 
 Athena is an [ewasm] (revision 4) virtual machine implemented in C++ conforming to [EVMC] ABIv7.
 
