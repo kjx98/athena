@@ -1,6 +1,6 @@
-[submodule "cable"]
-	path = cmake/cable
-	url = https://github.com/ethereum/cable
 [submodule "wabt"]
 	path = wabt
 	url = https://github.com/WebAssembly/wabt.git
+[submodule "cmake/cable"]
+	path = cmake/cable
+	url = https://github.com/ethereum/cable
