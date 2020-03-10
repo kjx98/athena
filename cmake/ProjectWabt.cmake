@@ -15,8 +15,9 @@ ExternalProject_Add(wabt
     PREFIX ${prefix}
     SOURCE_DIR ${source_dir}
     BINARY_DIR ${binary_dir}
+    PATCH_COMMAND patch < ${CMAKE_CURRENT_LIST_DIR}/wabt-1_0_13.patch
     CMAKE_ARGS
-	-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DCMAKE_BUILD_TYPE=Release
     -DWITH_EXCEPTIONS=ON
     -DBUILD_TESTS=OFF
@@ -24,7 +25,7 @@ ExternalProject_Add(wabt
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     -DCMAKE_CXX_FLAGS=-fvisibility=hidden
     -DCMAKE_C_FLAGS=-fvisibility=hidden
-	INSTALL_COMMAND ""
+    INSTALL_COMMAND ""
     BUILD_BYPRODUCTS ${wabt_library}
 )
 
@@ -34,7 +35,7 @@ set_target_properties(
     wabt::wabt
     PROPERTIES
     IMPORTED_CONFIGURATIONS Release
-	IMPORTED_LOCATION_RELEASE ${wabt_library}
+    IMPORTED_LOCATION_RELEASE ${wabt_library}
     INTERFACE_INCLUDE_DIRECTORIES "${include_dir};${binary_dir}"
 )
 
