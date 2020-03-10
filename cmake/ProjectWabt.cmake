@@ -6,15 +6,19 @@ set(ProjectWabtIncluded TRUE)
 include(ExternalProject)
 
 set(prefix ${CMAKE_BINARY_DIR})
-set(source_dir ${CMAKE_SOURCE_DIR}/wabt)
-set(binary_dir ${CMAKE_BINARY_DIR}/wabt)
+set(source_dir ${prefix}/wabt)
+set(binary_dir ${prefix}/wabt-build)
 set(include_dir ${source_dir})
 set(wabt_library ${binary_dir}/${CMAKE_STATIC_LIBRARY_PREFIX}wabt${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 ExternalProject_Add(wabt
     PREFIX ${prefix}
+	DOWNLOAD_NAME wabt-1.0.13.tar.gz
+	DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/downloads
     SOURCE_DIR ${source_dir}
     BINARY_DIR ${binary_dir}
+	URL https://github.com/WebAssembly/wabt/archive/1.0.13.tar.gz
+	URL_HASH SHA256=496dc0477029526aeaceafe0c2492e458ce89dada0e4f9640ecce1500f308a3d
     PATCH_COMMAND patch < ${CMAKE_CURRENT_LIST_DIR}/wabt-1_0_13.patch
     CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
