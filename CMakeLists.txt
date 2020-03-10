@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
 
-#if(NOT EXISTS ${CMAKE_SOURCE_DIR}/wabt/.git OR NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake/cable/.git)
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake/cable/.git)
     message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init")
 endif()
@@ -13,7 +12,10 @@ include(CableToolchains)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
-cable_configure_toolchain(DEFAULT cxx17-pic)
+#cable_configure_toolchain(DEFAULT cxx17-pic)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 cable_set_build_type(DEFAULT RelWithDebInfo CONFIGURATION_TYPES Debug;Release;RelWithDebInfo)
 
@@ -49,7 +51,7 @@ endif()
 
 option(H_EOS "Build with eos-vm" OFF)
 if (H_EOS)
-		include(ProjectEOS)
+	include_directories ( eos-vm/include )
 endif()
 
 if (NOT (H_WABT OR H_EOS))

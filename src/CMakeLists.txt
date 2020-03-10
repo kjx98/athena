@@ -6,6 +6,7 @@ find_package(Threads REQUIRED)
 set(athena_include_dir ${PROJECT_SOURCE_DIR}/include)
 get_filename_component(evmc_include_dir .. ABSOLUTE)
 
+
 add_library(athena
     debugging.h
     ${athena_include_dir}/athena/athena.h
@@ -44,11 +45,6 @@ endif()
 if(H_WABT)
     target_compile_definitions(athena PRIVATE H_WABT=1)
     target_link_libraries(athena PRIVATE wabt::wabt)
-endif()
-
-if(H_WAVM)
-    target_compile_definitions(athena PRIVATE H_WAVM=1)
-    target_link_libraries(athena PRIVATE wavm::wavm)
 endif()
 
 install(TARGETS athena EXPORT athenaTargets

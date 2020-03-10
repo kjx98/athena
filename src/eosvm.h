@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Jesse Kuang
+ * Copyright 2019-2020 Jesse Kuang
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 
 #include "eei.h"
 
-
 namespace athena {
 
 class EOSvmEngine : public WasmEngine {
@@ -33,17 +32,6 @@ public:
     evmc_message const& msg,
     bool meterInterfaceGas
   ) override;
-
-  void verifyContract(bytes_view code) override;
-
-private:
-  ExecutionResult internalExecute(
-    evmc::HostContext& context,
-    bytes_view code,
-    bytes_view state_code,
-    evmc_message const& msg,
-    bool meterInterfaceGas
-  );
 
 };
 
