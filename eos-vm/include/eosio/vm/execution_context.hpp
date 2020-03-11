@@ -242,7 +242,7 @@ namespace eosio { namespace vm {
          static_assert(sizeof(native_value) == 8, "8-bytes expected for native_value");
          native_value result;
          unsigned stack_check = constants::max_call_depth + 1;
-         register void* stack_top asm ("r12") = stack;
+         void* stack_top asm ("r12") = stack;
          // 0x1f80 is the default MXCSR value
          asm volatile(
             "test %[stack_top], %[stack_top]; "

@@ -266,7 +266,7 @@ namespace eosio { namespace vm {
 
       void parse_elem_segment(wasm_code_ptr& code, elem_segment& es) {
          table_type* tt = nullptr;
-         for (int i = 0; i < _mod->tables.size(); i++) {
+         for (unsigned int i = 0; i < _mod->tables.size(); i++) {
             if (_mod->tables[i].element_type == types::anyfunc)
                tt = &(_mod->tables[i]);
          }
@@ -453,13 +453,13 @@ namespace eosio { namespace vm {
          std::vector<uint32_t> _boundaries;
       };
 
-      void parse_function_body_code(wasm_code_ptr& code, size_t bounds, Writer& code_writer, const func_type& ft, const local_types_t& local_types) {
+      void parse_function_body_code(wasm_code_ptr& code, size_t bounds, Writer& code_writer, const func_type& fnt, const local_types_t& local_types) {
          // Initialize the control stack with the current function as the sole element
          operand_stack_type_tracker op_stack;
          std::vector<pc_element_t> pc_stack{{
                op_stack.depth(),
-               ft.return_count ? ft.return_type : static_cast<uint32_t>(types::pseudo),
-               ft.return_count ? ft.return_type : static_cast<uint32_t>(types::pseudo),
+               fnt.return_count ? fnt.return_type : static_cast<uint32_t>(types::pseudo),
+               fnt.return_count ? fnt.return_type : static_cast<uint32_t>(types::pseudo),
                false,
                std::vector<branch_t>{}}};
 
@@ -929,7 +929,7 @@ namespace eosio { namespace vm {
       template <uint8_t id>
       inline void parse_section(wasm_code_ptr&                                                             code,
                                 vec<typename std::enable_if_t<id == section_id::type_section, func_type>>& elems) {
-         parse_section_impl(code, elems, [&](wasm_code_ptr& code_, func_type& ft_, std::size_t /*idx*/) { parse_func_type(code_, ft_); });
+         parse_section_impl(code, elems, [&](wasm_code_ptr& code_, func_type& ft, std::size_t /*idx*/) { parse_func_type(code_, ft); });
       }
       template <uint8_t id>
       inline void parse_section(wasm_code_ptr&                                                                  code,

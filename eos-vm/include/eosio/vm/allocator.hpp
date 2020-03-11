@@ -324,7 +324,7 @@ namespace eosio { namespace vm {
          EOS_VM_ASSERT( _offset / sizeof(T) >= size, wasm_bad_alloc, "reclaimed too much memory" );
          EOS_VM_ASSERT( size == 0 || (char*)(ptr + size) == (_base + _offset), wasm_bad_alloc, "reclaiming memory must be strictly LIFO");
          if ( size != 0 )
-            _offset = ((char*)ptr - _base);
+            _offset = (size_t)((char*)ptr - _base);
       }
 
       /*
@@ -380,7 +380,7 @@ namespace eosio { namespace vm {
       void alloc(size_t size = 1 /*in pages*/) {
          if (size == 0) return;
          EOS_VM_ASSERT(page != -1, wasm_bad_alloc, "require memory to allocate");
-         EOS_VM_ASSERT(size <= max_pages - page, wasm_bad_alloc, "exceeded max number of pages");
+         EOS_VM_ASSERT((int)size <= max_pages - page, wasm_bad_alloc, "exceeded max number of pages");
          int err = mprotect(raw + (page_size * page), (page_size * size), PROT_READ | PROT_WRITE);
          EOS_VM_ASSERT(err == 0, wasm_bad_alloc, "mprotect failed");
          T* ptr    = (T*)(raw + (page_size * page));
@@ -391,7 +391,7 @@ namespace eosio { namespace vm {
       void free(std::size_t size) {
          if (size == 0) return;
          EOS_VM_ASSERT(page != -1, wasm_bad_alloc, "require memory to deallocate");
-         EOS_VM_ASSERT(size <= page, wasm_bad_alloc, "freed too many pages");
+         EOS_VM_ASSERT((int)size <= page, wasm_bad_alloc, "freed too many pages");
          page -= size;
          int err = mprotect(raw + (page_size * page), (page_size * size), PROT_NONE);
          EOS_VM_ASSERT(err == 0, wasm_bad_alloc, "mprotect failed");

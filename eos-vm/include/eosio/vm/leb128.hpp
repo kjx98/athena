@@ -184,12 +184,12 @@ namespace eosio { namespace vm {
          inline constexpr T _to() {
             typename std::make_unsigned<T>::type ret = 0;
             #pragma unroll
-            for (int i=bytes_used-1; i >= 0; i--) {
+            for (unsigned int i=bytes_used-1; i >= 0; i--) {
                ret <<= 7;
                ret |= storage[i] & 0x7f;
             }
             if (bytes_used >= 1 && bytes_used < bytes_needed<N>()) {
-               size_t shift = ((bytes_used) * 7);
+               size_t shift = (size_t)((bytes_used) * 7);
                if (storage[bytes_used-1] & 0x40)
                   ret |= (-1ull) << shift;
             }

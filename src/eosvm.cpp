@@ -61,8 +61,8 @@ struct ewasm_host_methods {
 	throw wasm_exit_exception{ "Exit" };
    }
    int32_t eth_getCallDataSize() { return field.size(); }
-   void    eth_callDataCopy(void* res, int32_t _off, uint32_t l) {
-      uint32_t ll = (uint32_t)field.size();
+   void    eth_callDataCopy(void* res, int32_t _off, int32_t l) {
+      int32_t ll = (int32_t)field.size();
       if (_off >= ll)
          return;
       if (_off + l > ll)
