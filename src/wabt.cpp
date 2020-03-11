@@ -50,23 +50,31 @@ public:
   ):
     EthereumInterface(_context, _code, _msg, _result, _meterGas)
   {}
-
-  // TODO: improve this design...
-  void setWasmMemory(interp::Memory* _wasmMemory) {
-    m_wasmMemory = _wasmMemory;
+  void setEnv(interp::Environment *evP) {
+	envPtr = evP;
   }
 
 private:
   // These assume that m_wasmMemory was set prior to execution.
-  size_t memorySize() const override { return m_wasmMemory->data.size(); }
-  void memorySet(size_t offset, uint8_t value) override { m_wasmMemory->data[offset] = static_cast<char>(value); }
-  uint8_t memoryGet(size_t offset) override { return static_cast<uint8_t>(m_wasmMemory->data[offset]); }
+  size_t memorySize() const override {
+	auto memPtr = envPtr->GetMemory(0);
+	return memPtr->data.size();
+  }
+  void memorySet(size_t offset, uint8_t value) override {
+	auto memPtr = envPtr->GetMemory(0);
+	memPtr->data[offset] = static_cast<char>(value);
+  }
+  uint8_t memoryGet(size_t offset) override {
+	auto memPtr = envPtr->GetMemory(0);
+	return static_cast<uint8_t>(memPtr->data[offset]);
+  }
   uint8_t* memoryPointer(size_t offset, size_t length) override {
+	auto memPtr = envPtr->GetMemory(0);
     ensureCondition(memorySize() >= (offset + length), InvalidMemoryAccess, "Memory is shorter than requested segment");
-    return reinterpret_cast<uint8_t*>(&m_wasmMemory->data[offset]);
+    return reinterpret_cast<uint8_t*>(& memPtr->data[offset]);
   }
 
-  interp::Memory* m_wasmMemory;
+  interp::Environment *envPtr;
 };
 
 unique_ptr<WasmEngine> WabtEngine::create()
@@ -88,7 +96,7 @@ ExecutionResult WabtEngine::execute(
 
   // Set up the wabt Environment, which includes the Wasm store
   // and the list of modules used for importing/exporting between modules
-  interp::Environment env;
+  interp::Environment env(Features{});
 
   // Set up interface to eei host functions
   ExecutionResult result;
@@ -109,7 +117,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiUseGas(static_cast<int64_t>(args[0].value.i64));
-      return interp::Result::Ok;
+      return interp::ResultType::Ok;
     }
   );
 
@@ -123,7 +131,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiGetAddress(args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::ResultType::Ok;
     }
   );
 
@@ -137,7 +145,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiGetExternalBalance(args[0].value.i32, args[1].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -151,7 +159,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues& results
     ) {
       results[0].set_i32(interface.eeiGetBlockHash(args[0].value.i64, args[1].value.i32));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -169,7 +177,7 @@ ExecutionResult WabtEngine::execute(
         static_cast<int64_t>(args[0].value.i64), args[1].value.i32,
         args[2].value.i32, args[3].value.i32, args[4].value.i32
       ));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -183,7 +191,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiCallDataCopy(args[0].value.i32, args[1].value.i32, args[2].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -197,7 +205,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues& results
     ) {
       results[0].set_i32(interface.eeiGetCallDataSize());
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -215,7 +223,7 @@ ExecutionResult WabtEngine::execute(
         static_cast<int64_t>(args[0].value.i64), args[1].value.i32,
         args[2].value.i32, args[3].value.i32, args[4].value.i32
       ));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -233,7 +241,7 @@ ExecutionResult WabtEngine::execute(
         static_cast<int64_t>(args[0].value.i64), args[1].value.i32, 0,
         args[2].value.i32, args[3].value.i32
       ));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -251,7 +259,7 @@ ExecutionResult WabtEngine::execute(
         static_cast<int64_t>(args[0].value.i64), args[1].value.i32, 0,
         args[2].value.i32, args[3].value.i32
       ));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -265,7 +273,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiStorageStore(args[0].value.i32, args[1].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -279,7 +287,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiStorageLoad(args[0].value.i32, args[1].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -293,7 +301,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiGetCaller(args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -307,7 +315,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiGetCallValue(args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -321,7 +329,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiCodeCopy(args[0].value.i32, args[1].value.i32, args[2].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -335,7 +343,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues& results
     ) {
       results[0].set_i32(interface.eeiGetCodeSize());
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -349,7 +357,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiGetBlockCoinbase(args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -366,7 +374,7 @@ ExecutionResult WabtEngine::execute(
         args[0].value.i32, args[1].value.i32,
         args[2].value.i32, args[3].value.i32
       ));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -380,7 +388,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiGetBlockDifficulty(args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -397,7 +405,7 @@ ExecutionResult WabtEngine::execute(
         args[0].value.i32, args[1].value.i32,
         args[2].value.i32, args[3].value.i32
       );
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -411,7 +419,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues& results
     ) {
       results[0].set_i32(interface.eeiGetExternalCodeSize(args[0].value.i32));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -425,7 +433,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues& results
     ) {
       results[0].set_i64(static_cast<uint64_t>(interface.eeiGetGasLeft()));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -439,7 +447,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues& results
     ) {
       results[0].set_i64(static_cast<uint64_t>(interface.eeiGetBlockGasLimit()));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -453,7 +461,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiGetTxGasPrice(args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -470,7 +478,7 @@ ExecutionResult WabtEngine::execute(
         args[0].value.i32, args[1].value.i32, args[2].value.i32, args[3].value.i32,
         args[4].value.i32, args[5].value.i32, args[6].value.i32
       );
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -484,7 +492,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues& results
     ) {
       results[0].set_i64(static_cast<uint64_t>(interface.eeiGetBlockNumber()));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -498,7 +506,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiGetTxOrigin(args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -511,8 +519,9 @@ ExecutionResult WabtEngine::execute(
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
+      interface.debugPrintMem(true, args[0].value.i32, args[1].value.i32);
       interface.eeiFinish(args[0].value.i32, args[1].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -526,7 +535,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiRevert(args[0].value.i32, args[1].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -540,7 +549,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues& results
     ) {
       results[0].set_i32(interface.eeiGetReturnDataSize());
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -554,7 +563,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiReturnDataCopy(args[0].value.i32, args[1].value.i32, args[2].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -568,7 +577,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.eeiSelfDestruct(args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -582,7 +591,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues& results
     ) {
       results[0].set_i64(static_cast<uint64_t>(interface.eeiGetBlockTimestamp()));
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -602,7 +611,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.debugPrint(args[0].value.i32, args[1].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -616,7 +625,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.debugPrint32(args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -630,7 +639,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.debugPrint64(args[0].value.i64);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -644,7 +653,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.debugPrintMem(false, args[0].value.i32, args[1].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -658,7 +667,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.debugPrintMem(true, args[0].value.i32, args[1].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -672,7 +681,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.debugPrintStorage(false, args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 
@@ -686,7 +695,7 @@ ExecutionResult WabtEngine::execute(
       interp::TypedValues&
     ) {
       interface.debugPrintStorage(true, args[0].value.i32);
-      return interp::Result::Ok;
+      return interp::Result(interp::ResultType::Ok);
     }
   );
 #endif
@@ -733,16 +742,15 @@ ExecutionResult WabtEngine::execute(
     interp::Thread::Options{} // empty for no threads
   );
 
-  // FIXME: really bad design
-  interface.setWasmMemory(env.GetMemory(0));
-
+  // better set env other than setMemory
+  interface.setEnv(&env);
   executionStarted();
 
   // Execute main
   try {
     interp::ExecResult wabtResult = executor.RunExport(mainFunction, interp::TypedValues{}); // second arg is empty since no args
     // Wrap any non-EEI exception under VMTrap.
-    ensureCondition(wabtResult.result == interp::Result::Ok, VMTrap, "The VM invocation had a trap.");
+    ensureCondition(wabtResult.result.ok(), VMTrap, "The VM invocation had a trap.");
   } catch (EndExecution const&) {
     // This exception is ignored here because we consider it to be a success.
     // It is only a clutch for POSIX style exit()
