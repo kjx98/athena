@@ -62,7 +62,7 @@ struct ewasm_host_methods {
    }
    int32_t eth_getCallDataSize() { return field.size(); }
    void    eth_callDataCopy(void* res, int32_t _off, uint32_t l) {
-      uint32_t ll = field.size();
+      uint32_t ll = (uint32_t)field.size();
       if (_off >= ll)
          return;
       if (_off + l > ll)
@@ -80,8 +80,7 @@ int main11(int argc, char** argv) {
    using backend_t = eosio::vm::backend<ewasm_host_methods, eosio::vm::jit>;
    //using backend_t = eosio::vm::backend<ewasm_host_methods>;
    using rhf_t = eosio::vm::registered_host_functions<ewasm_host_methods>;
-   inputs[4+31] = 15;
-   std::string	in_("test", sizeof(inputs));
+   std::string	in_("test", 5);
    ewasm_host_methods myHost{ in_ };
 
    if (argc < 2) {
@@ -165,21 +164,8 @@ public:
     EthereumInterface(_context, _code, _msg, _result, _meterGas)
   {}
 
-  void setWasmMemory(Runtime::MemoryInstance* _wasmMemory) {
-    m_wasmMemory = _wasmMemory;
-  }
 
 private:
-  // These assume that m_wasmMemory was set prior to execution.
-  size_t memorySize() const override { return Runtime::getMemoryNumPages(m_wasmMemory) * 65536; }
-  void memorySet(size_t offset, uint8_t value) override { Runtime::memoryRef<U8>(m_wasmMemory, offset) = value; }
-  uint8_t memoryGet(size_t offset) override { return Runtime::memoryRef<U8>(m_wasmMemory, offset); }
-  uint8_t* memoryPointer(size_t offset, size_t length) override {
-    ensureCondition(memorySize() >= (offset + length), InvalidMemoryAccess, "Memory is shorter than requested segment");
-    return Runtime::memoryArrayPtr<U8>(m_wasmMemory, offset, length);
-  }
-
-  Runtime::MemoryInstance* m_wasmMemory;
 };
 
 unique_ptr<WasmEngine> EOSvmEngine::create()
@@ -196,12 +182,12 @@ ExecutionResult EOSvmEngine::execute(
 ) {
   try {
     instantiationStarted();
-    //ExecutionResult result = internalExecute(context, code, state_code, msg, meterInterfaceGas);
+    ExecutionResult result; // = internalExecute(context, code, state_code, msg, meterInterfaceGas);
     // And clean up mess left by this run.
     //Runtime::collectGarbage();
     executionFinished();
     return result;
-  } catch (exception const&) {
+  } catch (AthenaException::exception const&) {
     // And clean up mess left by this run.
     //Runtime::collectGarbage();
     // We only catch this exception here in order to clean up garbage..

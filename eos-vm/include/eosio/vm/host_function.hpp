@@ -82,7 +82,7 @@ namespace eosio { namespace vm {
    template <typename T, std::size_t Align>
    struct aligned_ptr_wrapper {
       static_assert(Align % alignof(T) == 0, "Must align to at least the alignment of T");
-      aligned_ptr_wrapper(void* ptr) : ptr(ptr) {
+      aligned_ptr_wrapper(void* ptr_) : ptr(ptr_) {
         if (reinterpret_cast<std::uintptr_t>(ptr) % Align != 0) {
             copy = T{};
             memcpy( &(*copy), ptr, sizeof(T) );
@@ -109,7 +109,7 @@ namespace eosio { namespace vm {
    template <typename T, std::size_t Align>
    struct aligned_array_wrapper {
       static_assert(Align % alignof(T) == 0, "Must align to at least the alignment of T");
-      aligned_array_wrapper(void* ptr, uint32_t size) : ptr(ptr), size(size) {
+      aligned_array_wrapper(void* ptr_, uint32_t siz) : ptr(ptr_), size(siz) {
          if (reinterpret_cast<std::uintptr_t>(ptr) % Align != 0) {
             copy.reset(new std::remove_cv_t<T>[size]);
             memcpy( copy.get(), ptr, sizeof(T) * size );

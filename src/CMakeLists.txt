@@ -47,6 +47,11 @@ if(H_WABT)
     target_link_libraries(athena PRIVATE wabt::wabt)
 endif()
 
+if(H_EOS)
+	target_compile_definitions(athena PRIVATE H_EOS=1)
+    target_link_libraries(athena PRIVATE pthread)
+endif()
+
 install(TARGETS athena EXPORT athenaTargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

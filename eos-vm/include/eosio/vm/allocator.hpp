@@ -131,19 +131,19 @@ namespace eosio { namespace vm {
       }
    private:
       struct segment {
-         segment(void * base, std::size_t size) : base(base), size(size) {}
-         segment(segment&& other) : base(other.base), size(other.size) {
-            other.base = nullptr;
-            other.size = 0;
+         segment(void * base, std::size_t size) : _base(base), _size(size) {}
+         segment(segment&& other) : _base(other._base), _size(other._size) {
+            other._base = nullptr;
+            other._size = 0;
          }
          segment& operator=(const segment& other) = delete;
          ~segment() {
-            if(base) {
-               ::munmap(base, size);
+            if(_base) {
+               ::munmap(_base, _size);
             }
          }
-         void * base;
-         std::size_t size;
+         void * _base;
+         std::size_t _size;
       };
       using block = std::pair<std::size_t, void*>;
       struct by_size {
@@ -258,7 +258,7 @@ namespace eosio { namespace vm {
 
       ~growable_allocator() {
          munmap(_base, _capacity);
-         if (is_jit) {
+         if (_is_jit) {
             jit_allocator::instance().free(_code_base);
          }
       }
@@ -300,7 +300,7 @@ namespace eosio { namespace vm {
             int err = mprotect(executable_code, _code_size, PROT_READ | PROT_WRITE);
             EOS_VM_ASSERT(err == 0, wasm_bad_alloc, "mprotect failed");
             std::memcpy(executable_code, _code_base, _code_size);
-            is_jit = true;
+            _is_jit = true;
             _code_base = (char*)executable_code;
             _offset = (char*)code_base - _base;
          }
@@ -348,26 +348,26 @@ namespace eosio { namespace vm {
       char*  _base;
       char*  _code_base = nullptr;
       size_t _code_size = 0;
-      bool is_jit = false;
+      bool _is_jit = false;
    };
 
    template <typename T>
    class fixed_stack_allocator {
     private:
-      T*     raw      = nullptr;
-      size_t max_size = 0;
+      T*     _raw      = nullptr;
+      size_t _max_size = 0;
 
     public:
       template <typename U>
       void free() {
-         munmap(raw, max_memory);
+         munmap(_raw, max_memory);
       }
-      fixed_stack_allocator(size_t max_size) : max_size(max_size) {
-         raw = (T*)mmap(NULL, max_memory, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-         EOS_VM_ASSERT( raw != MAP_FAILED, wasm_bad_alloc, "mmap failed to alloca pages" );
-         mprotect(raw, max_size * sizeof(T), PROT_READ | PROT_WRITE);
+      fixed_stack_allocator(size_t max_size) : _max_size(max_size) {
+         _raw = (T*)mmap(NULL, max_memory, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+         EOS_VM_ASSERT( _raw != MAP_FAILED, wasm_bad_alloc, "mmap failed to alloca pages" );
+         mprotect(_raw, max_size * sizeof(T), PROT_READ | PROT_WRITE);
       }
-      inline T* get_base_ptr() const { return raw; }
+      inline T* get_base_ptr() const { return _raw; }
    };
 
    class wasm_allocator {
@@ -411,15 +411,15 @@ namespace eosio { namespace vm {
       }
       void reset(uint32_t new_pages) {
          if (page != -1) {
-            memset(raw, '\0', page_size * page); // zero the memory
+            memset(raw, 0, (size_t)(page_size * page)); // zero the memory
          } else {
             std::size_t syspagesize = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
             int err = mprotect(raw - syspagesize, syspagesize, PROT_READ);
             EOS_VM_ASSERT(err == 0, wasm_bad_alloc, "mprotect failed");
          }
          // no need to mprotect if the size hasn't changed
-         if (new_pages != page && page > 0) {
-            int err = mprotect(raw, page_size * page, PROT_NONE); // protect the entire region of memory
+         if (new_pages != (uint32_t)page && page > 0) {
+            int err = mprotect(raw, (size_t)(page_size * page), PROT_NONE); // protect the entire region of memory
             EOS_VM_ASSERT(err == 0, wasm_bad_alloc, "mprotect failed");
          }
          page = 0;
@@ -428,8 +428,8 @@ namespace eosio { namespace vm {
       void reset() {
          if (page != -1) {
             std::size_t syspagesize = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
-            memset(raw, '\0', page_size * page); // zero the memory
-            int err = mprotect(raw - syspagesize, page_size * page + syspagesize, PROT_NONE);
+            memset(raw, 0, (size_t)(page_size * page)); // zero the memory
+            int err = mprotect(raw - syspagesize, (size_t)(page_size * page) + syspagesize, PROT_NONE);
             EOS_VM_ASSERT(err == 0, wasm_bad_alloc, "mprotect failed");
          }
          page = -1;

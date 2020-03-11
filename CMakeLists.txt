@@ -12,22 +12,25 @@ include(CableToolchains)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
-#cable_configure_toolchain(DEFAULT cxx17-pic)
-set(CMAKE_CXX_STANDARD 17)
+cable_configure_toolchain(DEFAULT cxx17-pic)
+#set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+#set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 cable_set_build_type(DEFAULT RelWithDebInfo CONFIGURATION_TYPES Debug;Release;RelWithDebInfo)
 
 set(CMAKE_DEBUG_POSTFIX "")
 
 project(athena)
-set(PROJECT_VERSION 0.3.0-alpha.0)
+set(PROJECT_VERSION 0.1.0-alpha)
 
 cable_configure_compiler()
 if(CABLE_COMPILER_GNULIKE)
     # TODO: fix the warnings instead
     add_compile_options(-Wno-pedantic)
+	add_compile_options(-Wno-sign-conversion -Wno-conversion)
+    add_compile_options(-Wno-unused-parameter)
+    add_compile_options(-Wno-error)
 endif()
 
 
@@ -51,6 +54,7 @@ endif()
 
 option(H_EOS "Build with eos-vm" OFF)
 if (H_EOS)
+    add_compile_options(-pthread)
 	include_directories ( eos-vm/include )
 endif()
 

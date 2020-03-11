@@ -2158,7 +2158,7 @@ namespace eosio { namespace vm {
          emit_bytes(static_cast<uint8_t>(storeop)...);;
       }
 
-      void emit_i32_relop(uint8_t opcode) {
+      void emit_i32_relop(uint8_t opcod) {
          // popq %rax
          emit_bytes(0x58);
          // popq %rcx
@@ -2168,13 +2168,13 @@ namespace eosio { namespace vm {
          // cmpl %eax, %ecx
          emit_bytes(0x39, 0xc1);
          // SETcc %dl
-         emit_bytes(0x0f, opcode, 0xc2);
+         emit_bytes(0x0f, opcod, 0xc2);
          // pushq %rdx
          emit_bytes(0x52);
       }
 
       template<class... T>
-      void emit_i64_relop(uint8_t opcode) {
+      void emit_i64_relop(uint8_t opcod) {
          // popq %rax
          emit_bytes(0x58);
          // popq %rcx
@@ -2184,7 +2184,7 @@ namespace eosio { namespace vm {
          // cmpq %rax, %rcx
          emit_bytes(0x48, 0x39, 0xc1);
          // SETcc %dl
-         emit_bytes(0x0f, opcode, 0xc2);
+         emit_bytes(0x0f, opcod, 0xc2);
          // pushq %rdx
          emit_bytes(0x52);
       }
@@ -2275,7 +2275,7 @@ namespace eosio { namespace vm {
          emit_bytes(0x48, 0x89, 0x04, 0x24);
       }
 
-      void emit_f32_relop(uint8_t opcode, uint64_t (*softfloatfun)(float32_t, float32_t), bool switch_params, bool flip_result) {
+      void emit_f32_relop(uint8_t opcod, uint64_t (*softfloatfun)(float32_t, float32_t), bool switch_params, bool flip_result) {
          if constexpr (use_softfloat) {
             // pushq %rdi
             emit_bytes(0x57);
@@ -2317,12 +2317,12 @@ namespace eosio { namespace vm {
                // movss (%rsp), %xmm0
                emit_bytes(0xf3, 0x0f, 0x10, 0x04, 0x24);
                // cmpCCss 8(%rsp), %xmm0
-               emit_bytes(0xf3, 0x0f, 0xc2, 0x44, 0x24, 0x08, opcode);
+               emit_bytes(0xf3, 0x0f, 0xc2, 0x44, 0x24, 0x08, opcod);
             } else {
                // movss 8(%rsp), %xmm0
                emit_bytes(0xf3, 0x0f, 0x10, 0x44, 0x24, 0x08);
                // cmpCCss (%rsp), %xmm0
-               emit_bytes(0xf3, 0x0f, 0xc2, 0x04, 0x24, opcode);
+               emit_bytes(0xf3, 0x0f, 0xc2, 0x04, 0x24, opcod);
             }               
             // movd %xmm0, %eax
             emit_bytes(0x66, 0x0f, 0x7e, 0xc0);
@@ -2340,7 +2340,7 @@ namespace eosio { namespace vm {
          }
       }
 
-      void emit_f64_relop(uint8_t opcode, uint64_t (*softfloatfun)(float64_t, float64_t), bool switch_params, bool flip_result) {
+      void emit_f64_relop(uint8_t opcod, uint64_t (*softfloatfun)(float64_t, float64_t), bool switch_params, bool flip_result) {
          if constexpr (use_softfloat) {
             // pushq %rdi
             emit_bytes(0x57);
@@ -2382,12 +2382,12 @@ namespace eosio { namespace vm {
                // movsd (%rsp), %xmm0
                emit_bytes(0xf2, 0x0f, 0x10, 0x04, 0x24);
                // cmpCCsd 8(%rsp), %xmm0
-               emit_bytes(0xf2, 0x0f, 0xc2, 0x44, 0x24, 0x08, opcode);
+               emit_bytes(0xf2, 0x0f, 0xc2, 0x44, 0x24, 0x08, opcod);
             } else {
                // movsd 8(%rsp), %xmm0
                emit_bytes(0xf2, 0x0f, 0x10, 0x44, 0x24, 0x08);
                // cmpCCsd (%rsp), %xmm0
-               emit_bytes(0xf2, 0x0f, 0xc2, 0x04, 0x24, opcode);
+               emit_bytes(0xf2, 0x0f, 0xc2, 0x04, 0x24, opcod);
             }               
             // movd %xmm0, %eax
             emit_bytes(0x66, 0x0f, 0x7e, 0xc0);
