@@ -29,6 +29,7 @@ if(CABLE_COMPILER_GNULIKE)
     # TODO: fix the warnings instead
     add_compile_options(-Wno-pedantic)
     add_compile_options(-Wno-sign-conversion)
+    add_compile_options(-Wno-sign-compare)
     add_compile_options(-Wno-conversion)
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-error)

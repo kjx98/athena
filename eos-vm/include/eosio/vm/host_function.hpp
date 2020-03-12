@@ -83,7 +83,7 @@ namespace eosio { namespace vm {
    struct aligned_ptr_wrapper {
       static_assert(Align % alignof(T) == 0, "Must align to at least the alignment of T");
       aligned_ptr_wrapper(void* ptr_) : ptr(ptr_) {
-        if (reinterpret_cast<std::uintptr_t>(ptr) % Align != 0) {
+        if (reinterpret_cast<std::uintptr_t>(ptr_) % Align != 0) {
             copy = T{};
             memcpy( &(*copy), ptr, sizeof(T) );
          }
@@ -110,7 +110,7 @@ namespace eosio { namespace vm {
    struct aligned_array_wrapper {
       static_assert(Align % alignof(T) == 0, "Must align to at least the alignment of T");
       aligned_array_wrapper(void* ptr_, uint32_t siz) : ptr(ptr_), size(siz) {
-         if (reinterpret_cast<std::uintptr_t>(ptr) % Align != 0) {
+         if (reinterpret_cast<std::uintptr_t>(ptr_) % Align != 0) {
             copy.reset(new std::remove_cv_t<T>[size]);
             memcpy( copy.get(), ptr, sizeof(T) * size );
          }
@@ -566,7 +566,7 @@ namespace eosio { namespace vm {
       static void resolve(Module& mod) {
          auto& imports          = mod.import_functions;
          auto& current_mappings = get_mappings<wasm_allocator>();
-         for (unsigned int i = 0; i < mod.imports.size(); i++) {
+         for (int i = 0; i < mod.imports.size(); i++) {
             std::string mod_name =
                   std::string((char*)mod.imports[i].module_str.raw(), mod.imports[i].module_str.size());
             std::string fn_name = std::string((char*)mod.imports[i].field_str.raw(), mod.imports[i].field_str.size());

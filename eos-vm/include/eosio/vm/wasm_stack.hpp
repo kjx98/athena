@@ -12,6 +12,7 @@
 #include <eosio/vm/vector.hpp>
 
 namespace eosio { namespace vm {
+	using namespace std;
    template <typename ElemT, size_t ElemSz, typename Allocator = nullptr_t >
    class stack {
     public:

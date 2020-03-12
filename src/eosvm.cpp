@@ -19,6 +19,7 @@
 #include <eosio/vm/host_function.hpp>
 #include <eosio/vm/watchdog.hpp>
 
+#include "debugging.h"
 #include "eosvm.h"
 
 #include <chrono>
@@ -95,6 +96,9 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
 
   wasm_allocator wa;
   using rhf_t = eosio::vm::registered_host_functions<EOSvmEthereumInterface>;
+#if H_DEBUGGING
+  H_DEBUG << "Executing with eosvm...\n";
+#endif
   instantiationStarted();
 
   // register eth_finish
@@ -124,16 +128,28 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
   rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::debugPrintStorage,
              wasm_allocator>(dbgMod, "printStorage");
 #endif
-  backend_t bkend(code);
+#if H_DEBUGGING
+  H_DEBUG << "Reading ewasm with eosvm...\n";
+#endif
+  wasm_code wcode(code.begin(), code.end());
+  backend_t bkend(wcode);
   bkend.set_wasm_allocator(&wa);
 
+#if H_DEBUGGING
+  H_DEBUG << "Resolving ewasm with eosvm...\n";
+#endif
   rhf_t::resolve(bkend.get_module());
   bkend.get_module().finalize();
   bkend.initialize();
+#if H_DEBUGGING
+  H_DEBUG << "Resolved with eosvm...\n";
+#endif
   ExecutionResult result; // = internalExecute(context, code, state_code, msg,
                           // meterInterfaceGas);
   EOSvmEthereumInterface interface{context, state_code, msg, result,
                                    meterInterfaceGas};
+  interface.setBackend(&bkend);
+  executionStarted();
   try {
     // bkend.execute_all(null_watchdog());
     bkend.call(&interface, "test", "main");

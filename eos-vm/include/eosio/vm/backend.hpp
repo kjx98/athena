@@ -203,11 +203,11 @@ namespace eosio { namespace vm {
          if (!wasm_file.is_open())
             throw std::runtime_error("wasm file not found");
          wasm_file.seekg(0, std::ios::end);
-         std::basic_string<uint8_t> wasm;
+         std::vector<uint8_t> wasm;
          int                  len = wasm_file.tellg();
          if (len < 0)
             throw std::runtime_error("wasm file length is -1");
-         wasm.reserve(len);
+         wasm.resize(len);
          wasm_file.seekg(0, std::ios::beg);
          wasm_file.read((char*)wasm.data(), wasm.size());
          wasm_file.close();
