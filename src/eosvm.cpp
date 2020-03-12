@@ -44,6 +44,7 @@ template <typename T> struct wasm_type_converter<T &> {
 } // namespace eosio::vm
 
 using namespace std;
+using namespace evmc;
 
 namespace athena {
 
@@ -60,30 +61,168 @@ public:
                                   ExecutionResult &_result, bool _meterGas)
       : EthereumInterface(_context, _code, _msg, _result, _meterGas) {}
 
-  void setBackend(backend_t *bkPtr) { m_backend = bkPtr; }
+#if H_DEBUGGING
+  void dbgPrint(char *, uint32_t length);
+  void dbgPrintMem(uint8_t *dp, uint32_t length) {
+    debugPrintMemImpl(false, dp, length);
+  }
+  void dbgPrintMemHex(uint8_t *dp, uint32_t length) {
+    debugPrintMemImpl(true, dp, length);
+  }
+  void dbgPrintStorage(uint8_t *dp) { debugPrintStorageImpl(false, dp); }
+  void dbgPrintStorageHex(uint8_t *dp) { debugPrintStorageImpl(true, dp); }
+#endif
+  void eCallDataCopy(uint8_t *result, uint32_t dataOffset, uint32_t length);
+  void eGetCaller(uint8_t *result);
+  void eStorageStore(bytes32 *path, bytes32 *valuePtr);
+  void eStorageLoad(bytes32 *path, bytes32 *result);
+  void eFinish(uint8_t *dp, uint32_t siz) { eRevertOrFinish(false, dp, siz); }
+  void eRevert(uint8_t *dp, uint32_t siz) { eRevertOrFinish(true, dp, siz); }
 
 private:
-  // These assume that m_wasmMemory was set prior to execution.
-  size_t memorySize() const override {
-    return m_backend->get_context().current_linear_memory();
-  }
-  void memorySet(size_t offset, uint8_t value) override {
-    auto memPtr = m_backend->get_context().linear_memory();
-    memPtr[offset] = static_cast<char>(value);
-  }
-  uint8_t memoryGet(size_t offset) override {
-    auto memPtr = m_backend->get_context().linear_memory();
-    return static_cast<uint8_t>(memPtr[offset]);
-  }
+#if H_DEBUGGING
+  void debugPrintMemImpl(bool, uint8_t *, uint32_t);
+  void debugPrintStorageImpl(bool, uint8_t *);
+#endif
+  void eRevertOrFinish(bool revert, uint8_t *dp, uint32_t size);
+  size_t memorySize() const override { return 0; }
+  void memorySet(size_t offset, uint8_t value) override {}
+  uint8_t memoryGet(size_t offset) override { return 0; }
   uint8_t *memoryPointer(size_t offset, size_t length) override {
-    ensureCondition(memorySize() >= (offset + length), InvalidMemoryAccess,
-                    "Memory is shorter than requested segment");
-    auto memPtr = m_backend->get_context().linear_memory();
-    return reinterpret_cast<uint8_t *>(&memPtr[offset]);
+    return nullptr;
   }
-
-  backend_t *m_backend;
 };
+
+#if H_DEBUGGING
+void EOSvmEthereumInterface::dbgPrint(char *dp, uint32_t length) {
+  H_DEBUG << depthToString() << " DEBUG print: ";
+  {
+    cerr << hex;
+    for (uint32_t i = 0; i < length; i++) {
+      cerr << dp[i];
+    }
+    cerr << dec;
+  }
+  H_DEBUG << endl;
+}
+
+void EOSvmEthereumInterface::debugPrintMemImpl(bool useHex, uint8_t *dp,
+                                               uint32_t length) {
+  cerr << depthToString() << " DEBUG printMem" << (useHex ? "Hex(" : "(") << hex
+       << "0x" << (uint32_t)((uint64_t)dp) << ":0x" << length << "): " << dec;
+  if (useHex) {
+    cerr << hex;
+  }
+  for (uint32_t i = 0; i < length; i++) {
+    cerr << dp[i] << " ";
+  }
+  if (useHex) {
+    cerr << dec;
+  }
+  cerr << endl;
+}
+
+void EOSvmEthereumInterface::debugPrintStorageImpl(bool useHex, uint8_t *dp) {
+  evmc_uint256be path;
+  memcpy(&path, dp, sizeof(path));
+
+  H_DEBUG << depthToString() << " DEBUG printStorage" << (useHex ? "Hex" : "")
+          << "(0x" << hex;
+
+  // Print out the path
+  for (uint8_t b : path.bytes)
+    cerr << static_cast<int>(b);
+
+  H_DEBUG << "): " << dec;
+
+  evmc_bytes32 result = m_host.get_storage(m_msg.destination, path);
+
+  if (useHex) {
+    cerr << hex;
+    for (uint8_t b : result.bytes)
+      cerr << static_cast<int>(b) << " ";
+    cerr << dec;
+  } else {
+    for (uint8_t b : result.bytes)
+      cerr << b << " ";
+  }
+  cerr << endl;
+}
+#endif
+
+void EOSvmEthereumInterface::eCallDataCopy(uint8_t *result, uint32_t dataOffset,
+                                           uint32_t length) {
+#if H_DEBUGGING
+  H_DEBUG << depthToString() << " callDataCopy " << hex
+          << (uint32_t)((uint64_t)result) << " " << dataOffset << " " << length
+          << dec << "\n";
+#endif
+  if (dataOffset >= m_msg.input_size)
+    return; // no copy
+
+  safeChargeDataCopy(length, GasSchedule::verylow);
+
+  if (dataOffset + length > m_msg.input_size)
+    length = m_msg.input_size - dataOffset;
+  memcpy(result, m_msg.input_data + dataOffset, length);
+}
+
+void EOSvmEthereumInterface::eGetCaller(uint8_t *result) {
+  H_DEBUG << depthToString() << " getCaller " << hex
+          << (uint32_t)((uint64_t)result) << dec << "\n";
+
+  takeInterfaceGas(GasSchedule::base);
+  memcpy(result, &m_msg.sender, sizeof(m_msg.sender));
+}
+
+void EOSvmEthereumInterface::eStorageStore(bytes32 *path, bytes32 *valuePtr) {
+  H_DEBUG << depthToString() << " storageStore " << hex
+          << (uint32_t)((uint64_t)path) << " " << (uint32_t)((uint64_t)valuePtr)
+          << dec << "\n";
+
+  // Charge this here as it is the minimum cost.
+  takeInterfaceGas(GasSchedule::storageStoreChange);
+
+  ensureCondition(!(m_msg.flags & EVMC_STATIC), StaticModeViolation,
+                  "storageStore");
+
+  const auto current = m_host.get_storage(m_msg.destination, *path);
+
+  // Charge the right amount in case of the create case.
+  if (is_zero(current) && !is_zero(*valuePtr))
+    takeInterfaceGas(GasSchedule::storageStoreCreate -
+                     GasSchedule::storageStoreChange);
+
+  // We do not need to take care about the delete case (gas refund), the client
+  // does it.
+
+  m_host.set_storage(m_msg.destination, *path, *valuePtr);
+}
+
+void EOSvmEthereumInterface::eStorageLoad(bytes32 *path, bytes32 *result) {
+  H_DEBUG << depthToString() << " storageLoad " << hex
+          << (uint32_t)((uint64_t)path) << " " << (uint32_t)((uint64_t)result)
+          << dec << "\n";
+
+  takeInterfaceGas(GasSchedule::storageLoad);
+
+  *result = m_host.get_storage(m_msg.destination, *path);
+}
+
+void EOSvmEthereumInterface::eRevertOrFinish(bool revert, uint8_t *dp,
+                                             uint32_t size) {
+#if H_DEBUGGING
+  H_DEBUG << depthToString() << " " << (revert ? "revert " : "finish ") << hex
+          << (uint32_t)((uint64_t)dp) << " " << size << dec << "\n";
+#endif
+
+  m_result.returnValue = bytes(size, '\0');
+  memcpy(m_result.returnValue.data(), dp, size);
+
+  m_result.isRevert = revert;
+
+  throw EndExecution{};
+}
 
 unique_ptr<WasmEngine> EOSvmEngine::create() {
   return unique_ptr<WasmEngine>{new EOSvmEngine};
@@ -102,30 +241,32 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
   instantiationStarted();
 
   // register eth_finish
-  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eeiFinish,
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eFinish,
              wasm_allocator>(ethMod, "finish");
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eRevert,
+             wasm_allocator>(ethMod, "revert");
   // register eth_getCallDataSize
   rhf_t::add<EOSvmEthereumInterface,
              &EOSvmEthereumInterface::eeiGetCallDataSize, wasm_allocator>(
       ethMod, "getCallDataSize");
-  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eeiCallDataCopy,
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eCallDataCopy,
              wasm_allocator>(ethMod, "callDataCopy");
-  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eeiGetCaller,
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eGetCaller,
              wasm_allocator>(ethMod, "getCaller");
-  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eeiStorageStore,
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eStorageStore,
              wasm_allocator>(ethMod, "storageStore");
-  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eeiStorageLoad,
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eStorageLoad,
              wasm_allocator>(ethMod, "storageLoad");
 #if H_DEBUGGING
-  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::debugPrint,
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::dbgPrint,
              wasm_allocator>(dbgMod, "print");
   rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::debugPrint32,
              wasm_allocator>(dbgMod, "print32");
   rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::debugPrint64,
              wasm_allocator>(dbgMod, "print64");
-  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::debugPrintMem,
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::dbgPrintMem,
              wasm_allocator>(dbgMod, "printMem");
-  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::debugPrintStorage,
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::dbgPrintStorage,
              wasm_allocator>(dbgMod, "printStorage");
 #endif
 #if H_DEBUGGING
@@ -148,11 +289,12 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
                           // meterInterfaceGas);
   EOSvmEthereumInterface interface{context, state_code, msg, result,
                                    meterInterfaceGas};
-  interface.setBackend(&bkend);
   executionStarted();
   try {
+	uint32_t main_idx = bkend.get_module().get_exported_function("main");
     // bkend.execute_all(null_watchdog());
-    bkend.call(&interface, "test", "main");
+    //bkend.call(&interface, "test", "main");
+    bkend.call(&interface, main_idx);
   } catch (wasm_exit_exception const &) {
     // This exception is ignored here because we consider it to be a success.
     // It is only a clutch for POSIX style exit()
