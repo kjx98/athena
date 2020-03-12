@@ -44,113 +44,12 @@ struct wasm_type_converter<T&> {
 };
 } // namespace eosio::vm
 
-
-struct ewasm_host_methods {
-   // example of a host "method"
-   void eth_finish(const char* msg, uint32_t l) {
-	if (l >= 4) {
-      uint32_t r = *(uint32_t*)(msg + l - 4);
-#ifndef NDEBUG
-      std::cerr << "finish value: " << __builtin_bswap32(r) << std::endl;
-#endif
-	}
-#ifndef NDEBUG
-	else
-      std::cerr << "finish w/out value or less than 4" << std::endl;
-#endif
-	throw wasm_exit_exception{ "Exit" };
-   }
-   int32_t eth_getCallDataSize() { return field.size(); }
-   void    eth_callDataCopy(void* res, int32_t _off, int32_t l) {
-      int32_t ll = (int32_t)field.size();
-      if (_off >= ll)
-         return;
-      if (_off + l > ll)
-         l = ll - _off;
-      void* src = (void*)(field.data() + _off);
-      memcpy(res, src, l);
-   }
-   // example of another type of host function
-   static void* memset(void* ptr, int x, size_t n) { return ::memset(ptr, x, n); }
-   std::string  field = "";
-};
-
-int main11(int argc, char** argv) {
-   wasm_allocator wa;
-   using backend_t = eosio::vm::backend<ewasm_host_methods, eosio::vm::jit>;
-   //using backend_t = eosio::vm::backend<ewasm_host_methods>;
-   using rhf_t = eosio::vm::registered_host_functions<ewasm_host_methods>;
-   std::string	in_("test", 5);
-   ewasm_host_methods myHost{ in_ };
-
-   if (argc < 2) {
-      std::cerr << "Error, no wasm file provided\n";
-      return -1;
-   }
-   // register eth_finish
-   rhf_t::add<ewasm_host_methods, &ewasm_host_methods::eth_finish,
-		   wasm_allocator>("ethereum", "finish");
-   // register eth_getCallDataSize
-   rhf_t::add<ewasm_host_methods, &ewasm_host_methods::eth_getCallDataSize,
-		   wasm_allocator>("ethereum",
-                                                                                            "getCallDataSize");
-   rhf_t::add<ewasm_host_methods, &ewasm_host_methods::eth_callDataCopy,
-		   wasm_allocator>("ethereum", "callDataCopy");
-   auto t3 = std::chrono::high_resolution_clock::now();
-   try {
-
-      auto code = backend_t::read_wasm(argv[1]);
-
-      auto      t1 = std::chrono::high_resolution_clock::now();
-      backend_t bkend(code);
-      auto      t2 = std::chrono::high_resolution_clock::now();
-      std::cout << "Startup " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() << " ns\n";
-
-      bkend.set_wasm_allocator(&wa);
-
-      auto t3 = std::chrono::high_resolution_clock::now();
-      rhf_t::resolve(bkend.get_module());
-      bkend.get_module().finalize();
-      bkend.initialize();
-      auto t32 = std::chrono::high_resolution_clock::now();
-      std::cout << "Resolv module import " << std::chrono::duration_cast<std::chrono::nanoseconds>(t32 - t3).count() << " ns\n";
-      t3 = std::chrono::high_resolution_clock::now();
-#ifdef NDEBUG
-      for (int i = 0; i < 400; ++i)
-#endif
-      {
-         try {
-            // bkend.execute_all(null_watchdog());
-            bkend.call(&myHost, "test", "main");
-         } catch (wasm_exit_exception const&) {
-            // This exception is ignored here because we consider it to be a success.
-            // It is only a clutch for POSIX style exit()
-#ifndef NDEBUG
-            auto t4 = std::chrono::high_resolution_clock::now();
-            std::cout << "finish Exit " << std::chrono::duration_cast<std::chrono::nanoseconds>(t4 - t3).count()
-                      << "\n";
-#endif
-         }
-      }
-      auto t4 = std::chrono::high_resolution_clock::now();
-#ifdef NDEBUG
-      std::cout << "Execution " << std::chrono::duration_cast<std::chrono::nanoseconds>(t4 - t3).count() / 400 << " ns\n";
-#else
-      std::cout << "Execution " << std::chrono::duration_cast<std::chrono::nanoseconds>(t4 - t3).count() << " ns\n";
-#endif
-
-   } catch (const eosio::vm::exception& ex) {
-      auto t4 = std::chrono::high_resolution_clock::now();
-      std::cout << "Execution " << std::chrono::duration_cast<std::chrono::nanoseconds>(t4 - t3).count() << "\n";
-      std::cerr << "eos-vm interpreter error\n";
-      std::cerr << ex.what() << " : " << ex.detail() << "\n";
-   }
-   return 0;
-}
-
 using namespace std;
 
 namespace athena {
+
+class EOSvmEthereumInterface;
+using backend_t = eosio::vm::backend<EOSvmEthereumInterface, eosio::vm::jit>;
 
 class EOSvmEthereumInterface : public EthereumInterface {
 public:
@@ -164,9 +63,32 @@ public:
     EthereumInterface(_context, _code, _msg, _result, _meterGas)
   {}
 
+  void setBackend(backend_t* bkPtr) {
+    m_backend = bkPtr;
+  }
 
 private:
+  // These assume that m_wasmMemory was set prior to execution.
+  size_t memorySize() const override {
+	return m_backend->get_context().current_linear_memory();
+  }
+  void memorySet(size_t offset, uint8_t value) override {
+	auto memPtr = m_backend->get_context().linear_memory();
+	memPtr[offset] = static_cast<char>(value);
+  }
+  uint8_t memoryGet(size_t offset) override {
+	auto memPtr = m_backend->get_context().linear_memory();
+	return static_cast<uint8_t>(memPtr[offset]);
+  }
+  uint8_t* memoryPointer(size_t offset, size_t length) override {
+    ensureCondition(memorySize() >= (offset + length), InvalidMemoryAccess, "Memory is shorter than requested segment");
+	auto memPtr = m_backend->get_context().linear_memory();
+    return reinterpret_cast<uint8_t*>(&memPtr[offset]);
+  }
+
+  backend_t* m_backend;
 };
+
 
 unique_ptr<WasmEngine> EOSvmEngine::create()
 {
@@ -180,20 +102,46 @@ ExecutionResult EOSvmEngine::execute(
   evmc_message const& msg,
   bool meterInterfaceGas
 ) {
-  try {
+
+   wasm_allocator wa;
+   using rhf_t = eosio::vm::registered_host_functions<EOSvmEthereumInterface>;
     instantiationStarted();
+
+#ifdef	ommit
+   // register eth_finish
+   rhf_t::add<ewasm_host_methods, &ewasm_host_methods::eth_finish,
+		   wasm_allocator>("ethereum", "finish");
+   // register eth_getCallDataSize
+   rhf_t::add<ewasm_host_methods, &ewasm_host_methods::eth_getCallDataSize,
+		   wasm_allocator>("ethereum",
+                                                                                            "getCallDataSize");
+   rhf_t::add<ewasm_host_methods, &ewasm_host_methods::eth_callDataCopy,
+		   wasm_allocator>("ethereum", "callDataCopy");
+#endif
+   backend_t bkend(code);
+   bkend.set_wasm_allocator(&wa);
+
+      rhf_t::resolve(bkend.get_module());
+      bkend.get_module().finalize();
+      bkend.initialize();
     ExecutionResult result; // = internalExecute(context, code, state_code, msg, meterInterfaceGas);
-    // And clean up mess left by this run.
-    //Runtime::collectGarbage();
-    executionFinished();
-    return result;
-  } catch (AthenaException::exception const&) {
-    // And clean up mess left by this run.
-    //Runtime::collectGarbage();
-    // We only catch this exception here in order to clean up garbage..
-    // TODO: hopefully WAVM is fixed so that this isn't needed
-    throw;
+  EOSvmEthereumInterface interface{context, state_code, msg, result, meterInterfaceGas};
+         try {
+            // bkend.execute_all(null_watchdog());
+            bkend.call(&interface, "test", "main");
+         } catch (wasm_exit_exception const&) {
+            // This exception is ignored here because we consider it to be a success.
+            // It is only a clutch for POSIX style exit()
+
+  } catch (EndExecution const&) {
+    // This exception is ignored here because we consider it to be a success.
+    // It is only a clutch for POSIX style exit()
+   } catch (const eosio::vm::exception& ex) {
+      std::cerr << "eos-vm interpreter error\n";
+      std::cerr << ex.what() << " : " << ex.detail() << "\n";
   }
+  executionFinished();
+  return result;
 }
 
 } // namespace athena

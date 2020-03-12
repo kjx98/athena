@@ -9,9 +9,10 @@ namespace eosio { namespace vm {
    template <typename T>
    struct guarded_ptr {
       T* raw_ptr;
-      T* orig_ptr;
+      const T* orig_ptr;
       T* bnds;
       guarded_ptr( T* rp, size_t bnds_ ) : raw_ptr(rp), orig_ptr(rp), bnds(rp + bnds_) {}
+      guarded_ptr( const T* rp, size_t bnds_ ) : raw_ptr((T *)rp), orig_ptr(rp), bnds((T *)rp + bnds_) {}
 
       inline guarded_ptr& operator+=(size_t i) {
          EOS_VM_ASSERT(i <= static_cast<std::size_t>(bnds - raw_ptr), guarded_ptr_exception, "overbounding pointer");

@@ -144,7 +144,8 @@ namespace eosio { namespace vm {
       guarded_vector<uint8_t> data;
    };
 
-   using wasm_code     = std::vector<uint8_t>;
+   //using wasm_code     = std::vector<uint8_t>;
+   using wasm_code     = std::basic_string_view<uint8_t>;
    using wasm_code_ptr = guarded_ptr<uint8_t>;
 
    struct module {

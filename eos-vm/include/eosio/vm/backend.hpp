@@ -198,16 +198,16 @@ namespace eosio { namespace vm {
       inline void            exit(const std::error_code& ec) { _ctx.exit(ec); }
       inline auto&           get_context() { return _ctx; }
 
-      static std::vector<uint8_t> read_wasm(const std::string& fname) {
+      static wasm_code read_wasm(const std::string& fname) {
          std::ifstream wasm_file(fname, std::ios::binary);
          if (!wasm_file.is_open())
             throw std::runtime_error("wasm file not found");
          wasm_file.seekg(0, std::ios::end);
-         std::vector<uint8_t> wasm;
+         std::basic_string<uint8_t> wasm;
          int                  len = wasm_file.tellg();
          if (len < 0)
             throw std::runtime_error("wasm file length is -1");
-         wasm.resize(len);
+         wasm.reserve(len);
          wasm_file.seekg(0, std::ios::beg);
          wasm_file.read((char*)wasm.data(), wasm.size());
          wasm_file.close();
