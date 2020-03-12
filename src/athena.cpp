@@ -16,12 +16,12 @@
 
 #include <athena/athena.h>
 
-#include <limits>
 #include <cstring>
-#include <unistd.h>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <memory>
+#include <unistd.h>
 
 #include <evmc/evmc.h>
 
@@ -50,21 +50,21 @@ enum class athena_evm1mode {
   runevm_contract,
 };
 
-const map<string, athena_evm1mode> evm1mode_options {
-  { "reject", athena_evm1mode::reject },
-  { "fallback", athena_evm1mode::fallback },
-  { "evm2wasm", athena_evm1mode::evm2wasm_contract },
-  { "runevm", athena_evm1mode::runevm_contract },
+const map<string, athena_evm1mode> evm1mode_options{
+    {"reject", athena_evm1mode::reject},
+    {"fallback", athena_evm1mode::fallback},
+    {"evm2wasm", athena_evm1mode::evm2wasm_contract},
+    {"runevm", athena_evm1mode::runevm_contract},
 };
 
-using WasmEngineCreateFn = unique_ptr<WasmEngine>(*)();
+using WasmEngineCreateFn = unique_ptr<WasmEngine> (*)();
 
 const map<string, WasmEngineCreateFn> wasm_engine_map {
 #if H_EOS
-  { "eosvm", EOSvmEngine::create },
+  {"eosvm", EOSvmEngine::create},
 #endif
 #if H_WABT
-  { "wabt", WabtEngine::create },
+  {"wabt", WabtEngine::create},
 #endif
 };
 
@@ -77,7 +77,7 @@ WasmEngineCreateFn wasmEngineCreateFn =
 #else
 #error "No engine requested."
 #endif
-;
+    ;
 
 struct athena_instance : evmc_vm {
   unique_ptr<WasmEngine> engine = wasmEngineCreateFn();
@@ -85,7 +85,10 @@ struct athena_instance : evmc_vm {
   bool metering = false;
   map<evmc::address, bytes> contract_preload_list;
 
-  athena_instance() noexcept : evmc_vm({EVMC_ABI_VERSION, "athena", athena_get_buildinfo()->project_version, nullptr, nullptr, nullptr, nullptr}) {}
+  athena_instance() noexcept
+      : evmc_vm({EVMC_ABI_VERSION, "athena",
+                 athena_get_buildinfo()->project_version, nullptr, nullptr,
+                 nullptr, nullptr}) {}
 };
 
 using namespace evmc::literals;
@@ -96,24 +99,23 @@ const auto runevmAddress = 0x000000000000000000000000000000000000000c_address;
 
 // Calls a system contract at @address with input data @input.
 // It is a "staticcall" with sender 000...000 and no value.
-// @returns output data from the contract and update the @gas variable with the gas left.
-pair<evmc_status_code, bytes> callSystemContract(
-  evmc::HostContext& context,
-  evmc_address const& address,
-  int64_t & gas,
-  bytes_view input
-) {
+// @returns output data from the contract and update the @gas variable with the
+// gas left.
+pair<evmc_status_code, bytes> callSystemContract(evmc::HostContext &context,
+                                                 evmc_address const &address,
+                                                 int64_t &gas,
+                                                 bytes_view input) {
   evmc_message message = {
-    .kind = EVMC_CALL,
-    .flags = EVMC_STATIC,
-    .depth = 0,
-    .gas = gas,
-    .destination = address,
-    .sender = {},
-    .input_data = input.data(),
-    .input_size = input.size(),
-    .value = {},
-    .create2_salt = {},
+      .kind = EVMC_CALL,
+      .flags = EVMC_STATIC,
+      .depth = 0,
+      .gas = gas,
+      .destination = address,
+      .sender = {},
+      .input_data = input.data(),
+      .input_size = input.size(),
+      .value = {},
+      .create2_salt = {},
   };
 
   evmc::result result = context.call(message);
@@ -128,29 +130,25 @@ pair<evmc_status_code, bytes> callSystemContract(
 }
 
 pair<evmc_status_code, bytes> locallyExecuteSystemContract(
-  evmc::HostContext& context,
-  evmc_address const& address,
-  int64_t & gas,
-  bytes_view input,
-  bytes_view code,
-  bytes_view state_code
-) {
+    evmc::HostContext &context, evmc_address const &address, int64_t &gas,
+    bytes_view input, bytes_view code, bytes_view state_code) {
   const evmc_message message = {
-    .kind = EVMC_CALL,
-    .flags = EVMC_STATIC,
-    .depth = 0,
-    .gas = gas,
-    .destination = address,
-    .sender = {},
-    .input_data = input.data(),
-    .input_size = input.size(),
-    .value = {},
-    .create2_salt = {},
+      .kind = EVMC_CALL,
+      .flags = EVMC_STATIC,
+      .depth = 0,
+      .gas = gas,
+      .destination = address,
+      .sender = {},
+      .input_data = input.data(),
+      .input_size = input.size(),
+      .value = {},
+      .create2_salt = {},
   };
 
   unique_ptr<WasmEngine> engine = wasmEngineCreateFn();
   // TODO: should we catch exceptions here?
-  ExecutionResult result = engine->execute(context, code, state_code, message, false);
+  ExecutionResult result =
+      engine->execute(context, code, state_code, message, false);
 
   bytes ret;
   evmc_status_code status = result.isRevert ? EVMC_REVERT : EVMC_SUCCESS;
@@ -162,119 +160,90 @@ pair<evmc_status_code, bytes> locallyExecuteSystemContract(
 
 // Calls the Sentinel contract with input data @input.
 // @returns the validated and metered output or empty output otherwise.
-bytes sentinel(evmc::HostContext& context, bytes_view input)
-{
+bytes sentinel(evmc::HostContext &context, bytes_view input) {
 #if H_DEBUGGING
   H_DEBUG << "Metering (input " << input.size() << " bytes)...\n";
 #endif
 
-  int64_t startgas = numeric_limits<int64_t>::max(); // do not charge for metering yet (give unlimited gas)
+  int64_t startgas =
+      numeric_limits<int64_t>::max(); // do not charge for metering yet (give
+                                      // unlimited gas)
   int64_t gas = startgas;
   evmc_status_code status;
   bytes ret;
 
-  tie(status, ret) = callSystemContract(
-    context,
-    sentinelAddress,
-    gas,
-    input
-  );
+  tie(status, ret) = callSystemContract(context, sentinelAddress, gas, input);
 
 #if H_DEBUGGING
-  H_DEBUG << "Metering done (output " << ret.size() << " bytes, used " << (startgas - gas) << " gas) with code=" << status << "\n";
+  H_DEBUG << "Metering done (output " << ret.size() << " bytes, used "
+          << (startgas - gas) << " gas) with code=" << status << "\n";
 #endif
 
-  ensureCondition(
-    status == EVMC_SUCCESS,
-    ContractValidationFailure,
-    "Sentinel has failed on contract. It is invalid."
-  );
+  ensureCondition(status == EVMC_SUCCESS, ContractValidationFailure,
+                  "Sentinel has failed on contract. It is invalid.");
 
   return ret;
 }
 
 // Calls the evm2wasm contract with input data @input.
 // @returns the compiled output or empty output otherwise.
-bytes evm2wasm(evmc::HostContext& context, bytes_view input) {
+bytes evm2wasm(evmc::HostContext &context, bytes_view input) {
   H_DEBUG << "Calling evm2wasm (input " << input.size() << " bytes)...\n";
 
-  int64_t startgas = numeric_limits<int64_t>::max(); // do not charge for metering yet (give unlimited gas)
+  int64_t startgas =
+      numeric_limits<int64_t>::max(); // do not charge for metering yet (give
+                                      // unlimited gas)
   int64_t gas = startgas;
   evmc_status_code status;
   bytes ret;
 
-  tie(status, ret) = callSystemContract(
-    context,
-    evm2wasmAddress,
-    gas,
-    input
-  );
+  tie(status, ret) = callSystemContract(context, evm2wasmAddress, gas, input);
 
-  H_DEBUG << "evm2wasm done (output " << ret.size() << " bytes, used " << (startgas - gas) << " gas) with status=" << status << "\n";
+  H_DEBUG << "evm2wasm done (output " << ret.size() << " bytes, used "
+          << (startgas - gas) << " gas) with status=" << status << "\n";
 
-  ensureCondition(
-    status == EVMC_SUCCESS,
-    ContractValidationFailure,
-    "evm2wasm has failed."
-  );
+  ensureCondition(status == EVMC_SUCCESS, ContractValidationFailure,
+                  "evm2wasm has failed.");
 
   return ret;
 }
 
 // Calls the runevm contract.
 // @returns a wasm-based evm interpreter.
-bytes runevm(evmc::HostContext& context, bytes code) {
+bytes runevm(evmc::HostContext &context, bytes code) {
   H_DEBUG << "Calling runevm (code " << code.size() << " bytes)...\n";
 
-  int64_t gas = numeric_limits<int64_t>::max(); // do not charge for metering yet (give unlimited gas)
+  int64_t gas = numeric_limits<int64_t>::max(); // do not charge for metering
+                                                // yet (give unlimited gas)
   evmc_status_code status;
   bytes ret;
 
-  tie(status, ret) = locallyExecuteSystemContract(
-      context,
-      runevmAddress,
-      gas,
-      {},
-      code,
-      code
-  );
+  tie(status, ret) =
+      locallyExecuteSystemContract(context, runevmAddress, gas, {}, code, code);
 
-  H_DEBUG << "runevm done (output " << ret.size() << " bytes) with status=" << status << "\n";
+  H_DEBUG << "runevm done (output " << ret.size()
+          << " bytes) with status=" << status << "\n";
 
-  ensureCondition(
-    status == EVMC_SUCCESS,
-    ContractValidationFailure,
-    "runevm has failed."
-  );
-  ensureCondition(
-    ret.size() > 0,
-    ContractValidationFailure,
-    "Runevm returned empty."
-  );
-  ensureCondition(
-    hasWasmPreamble(ret),
-    ContractValidationFailure,
-    "Runevm result has no wasm preamble."
-  );
+  ensureCondition(status == EVMC_SUCCESS, ContractValidationFailure,
+                  "runevm has failed.");
+  ensureCondition(ret.size() > 0, ContractValidationFailure,
+                  "Runevm returned empty.");
+  ensureCondition(hasWasmPreamble(ret), ContractValidationFailure,
+                  "Runevm result has no wasm preamble.");
 
   return ret;
 }
 
-void athena_destroy_result(evmc_result const* result) noexcept
-{
+void athena_destroy_result(evmc_result const *result) noexcept {
   delete[] result->output_data;
 }
 
-evmc_result athena_execute(
-  evmc_vm *instance,
-  const evmc_host_interface* host_interface,
-  evmc_host_context *context,
-  enum evmc_revision rev,
-  const evmc_message *msg,
-  const uint8_t *code,
-  size_t code_size
-) noexcept {
-  athena_instance* athena = static_cast<athena_instance*>(instance);
+evmc_result athena_execute(evmc_vm *instance,
+                           const evmc_host_interface *host_interface,
+                           evmc_host_context *context, enum evmc_revision rev,
+                           const evmc_message *msg, const uint8_t *code,
+                           size_t code_size) noexcept {
+  athena_instance *athena = static_cast<athena_instance *>(instance);
   evmc::HostContext host{*host_interface, context};
 
 #if H_DEBUGGING
@@ -290,10 +259,12 @@ evmc_result athena_execute(
 
     bool meterInterfaceGas = true;
 
-    // the bytecode residing in the state - this will be used by interface methods (i.e. codecopy)
+    // the bytecode residing in the state - this will be used by interface
+    // methods (i.e. codecopy)
     bytes_view state_code{code, code_size};
 
-    // the actual executable code - this can be modified (metered or evm2wasm compiled)
+    // the actual executable code - this can be modified (metered or evm2wasm
+    // compiled)
     bytes run_code{state_code};
 
     // replace executable code if replacement is supplied
@@ -312,12 +283,14 @@ evmc_result athena_execute(
       switch (athena->evm1mode) {
       case athena_evm1mode::evm2wasm_contract:
         run_code = evm2wasm(host, run_code);
-        ensureCondition(run_code.size() > 8, ContractValidationFailure, "Transcompiling via evm2wasm failed");
+        ensureCondition(run_code.size() > 8, ContractValidationFailure,
+                        "Transcompiling via evm2wasm failed");
         // TODO: enable this once evm2wasm does metering of interfaces
         // meterInterfaceGas = false;
         break;
       case athena_evm1mode::fallback:
-        H_DEBUG << "Non-WebAssembly input, but fallback mode enabled, asking client to deal with it.\n";
+        H_DEBUG << "Non-WebAssembly input, but fallback mode enabled, asking "
+                   "client to deal with it.\n";
         ret.status_code = EVMC_REJECTED;
         return ret;
       case athena_evm1mode::reject:
@@ -326,71 +299,67 @@ evmc_result athena_execute(
         return ret;
       case athena_evm1mode::runevm_contract:
         run_code = runevm(host, athena->contract_preload_list[runevmAddress]);
-        ensureCondition(run_code.size() > 8, ContractValidationFailure, "Interpreting via runevm failed");
+        ensureCondition(run_code.size() > 8, ContractValidationFailure,
+                        "Interpreting via runevm failed");
         // Runevm does interface metering on its own
         meterInterfaceGas = false;
         break;
       }
     }
 
-    ensureCondition(
-      hasWasmVersion(run_code, 1),
-      ContractValidationFailure,
-      "Contract has an invalid WebAssembly version."
-    );
+    ensureCondition(hasWasmVersion(run_code, 1), ContractValidationFailure,
+                    "Contract has an invalid WebAssembly version.");
 
     // Avoid this in case of evm2wasm translated code
     if (msg->kind == EVMC_CREATE && isWasm) {
       // Meter the deployment (constructor) code if it is WebAssembly
       if (athena->metering)
         run_code = sentinel(host, run_code);
-      ensureCondition(
-        hasWasmPreamble(run_code) && hasWasmVersion(run_code, 1),
-        ContractValidationFailure,
-        "Invalid contract or metering failed."
-      );
+      ensureCondition(hasWasmPreamble(run_code) && hasWasmVersion(run_code, 1),
+                      ContractValidationFailure,
+                      "Invalid contract or metering failed.");
     }
 
     athenaAssert(athena->engine, "Wasm engine not set.");
-    WasmEngine& engine = *athena->engine;
+    WasmEngine &engine = *athena->engine;
 
     ExecutionResult result;
-	// should move after execution if want remember owner's address
-	if (msg->kind == EVMC_CREATE) {
-		ensureCondition(msg->input_size == 0, ContractValidationFailure, "create must without input"); 
-		result.gasLeft = msg->gas;
-		result.isRevert = false;
-		result.returnValue = run_code;
-	} else {
-		result = engine.execute(host, run_code, state_code, *msg, meterInterfaceGas);
-		athenaAssert(result.gasLeft >= 0, "Negative gas left after execution.");
-	}
+    // should move after execution if want remember owner's address
+    if (msg->kind == EVMC_CREATE) {
+      ensureCondition(msg->input_size == 0, ContractValidationFailure,
+                      "create must without input");
+      result.gasLeft = msg->gas;
+      result.isRevert = false;
+      result.returnValue = run_code;
+    } else {
+      result =
+          engine.execute(host, run_code, state_code, *msg, meterInterfaceGas);
+      athenaAssert(result.gasLeft >= 0, "Negative gas left after execution.");
+    }
 
     // copy call result
     if (result.returnValue.size() > 0) {
       bytes returnValue;
 
-      if (msg->kind == EVMC_CREATE && !result.isRevert && hasWasmPreamble(result.returnValue)) {
-        ensureCondition(
-          hasWasmVersion(result.returnValue, 1),
-          ContractValidationFailure,
-          "Contract has an invalid WebAssembly version."
-        );
+      if (msg->kind == EVMC_CREATE && !result.isRevert &&
+          hasWasmPreamble(result.returnValue)) {
+        ensureCondition(hasWasmVersion(result.returnValue, 1),
+                        ContractValidationFailure,
+                        "Contract has an invalid WebAssembly version.");
 
         // Meter the deployed code if it is WebAssembly
-        returnValue = athena->metering ? sentinel(host, result.returnValue) : move(result.returnValue);
+        returnValue = athena->metering ? sentinel(host, result.returnValue)
+                                       : move(result.returnValue);
         ensureCondition(
-          hasWasmPreamble(returnValue) && hasWasmVersion(returnValue, 1),
-          ContractValidationFailure,
-          "Invalid contract or metering failed."
-        );
+            hasWasmPreamble(returnValue) && hasWasmVersion(returnValue, 1),
+            ContractValidationFailure, "Invalid contract or metering failed.");
         // FIXME: this should be done by the sentinel
-		// no verifyContract
+        // no verifyContract
       } else {
         returnValue = move(result.returnValue);
       }
 
-      uint8_t* output_data = new uint8_t[returnValue.size()];
+      uint8_t *output_data = new uint8_t[returnValue.size()];
       copy(returnValue.begin(), returnValue.end(), output_data);
 
       ret.output_size = returnValue.size();
@@ -400,34 +369,35 @@ evmc_result athena_execute(
 
     ret.status_code = result.isRevert ? EVMC_REVERT : EVMC_SUCCESS;
     ret.gas_left = result.gasLeft;
-  } catch (EndExecution const&) {
+  } catch (EndExecution const &) {
     ret.status_code = EVMC_INTERNAL_ERROR;
 #if H_DEBUGGING
     H_DEBUG << "EndExecution exception has leaked through.\n";
 #endif
-  } catch (VMTrap const& e) {
-    // TODO: use specific error code? EVMC_INVALID_INSTRUCTION or EVMC_TRAP_INSTRUCTION?
+  } catch (VMTrap const &e) {
+    // TODO: use specific error code? EVMC_INVALID_INSTRUCTION or
+    // EVMC_TRAP_INSTRUCTION?
     ret.status_code = EVMC_FAILURE;
     H_DEBUG << e.what() << "\n";
-  } catch (ArgumentOutOfRange const& e) {
+  } catch (ArgumentOutOfRange const &e) {
     ret.status_code = EVMC_ARGUMENT_OUT_OF_RANGE;
     H_DEBUG << e.what() << "\n";
-  } catch (OutOfGas const& e) {
+  } catch (OutOfGas const &e) {
     ret.status_code = EVMC_OUT_OF_GAS;
     H_DEBUG << e.what() << "\n";
-  } catch (ContractValidationFailure const& e) {
+  } catch (ContractValidationFailure const &e) {
     ret.status_code = EVMC_CONTRACT_VALIDATION_FAILURE;
     H_DEBUG << e.what() << "\n";
-  } catch (InvalidMemoryAccess const& e) {
+  } catch (InvalidMemoryAccess const &e) {
     ret.status_code = EVMC_INVALID_MEMORY_ACCESS;
     H_DEBUG << e.what() << "\n";
-  } catch (StaticModeViolation const& e) {
+  } catch (StaticModeViolation const &e) {
     ret.status_code = EVMC_STATIC_MODE_VIOLATION;
     H_DEBUG << e.what() << "\n";
-  } catch (InternalErrorException const& e) {
+  } catch (InternalErrorException const &e) {
     ret.status_code = EVMC_INTERNAL_ERROR;
     H_DEBUG << "InternalError: " << e.what() << "\n";
-  } catch (exception const& e) {
+  } catch (exception const &e) {
     ret.status_code = EVMC_INTERNAL_ERROR;
     H_DEBUG << "Unknown exception: " << e.what() << "\n";
   } catch (...) {
@@ -438,8 +408,8 @@ evmc_result athena_execute(
   return ret;
 }
 
-bool athena_parse_sys_option(athena_instance *athena, string const& _name, string const& value)
-{
+bool athena_parse_sys_option(athena_instance *athena, string const &_name,
+                             string const &value) {
   athenaAssert(_name.find("sys:") == 0, "");
   string name = _name.substr(4, string::npos);
   evmc_address address{};
@@ -460,9 +430,9 @@ bool athena_parse_sys_option(athena_instance *athena, string const& _name, strin
   } else {
     // alias
     const map<string, evmc_address> aliases = {
-      { string("sentinel"), sentinelAddress },
-      { string("evm2wasm"), evm2wasmAddress },
-      { string("runevm"), runevmAddress },
+        {string("sentinel"), sentinelAddress},
+        {string("evm2wasm"), evm2wasmAddress},
+        {string("runevm"), runevmAddress},
     };
 
     if (aliases.count(name) == 0) {
@@ -479,19 +449,17 @@ bool athena_parse_sys_option(athena_instance *athena, string const& _name, strin
     return false;
   }
 
-  H_DEBUG << "Loaded contract for " << name << " from " << value << " (" << contents.size() << " bytes)\n";
+  H_DEBUG << "Loaded contract for " << name << " from " << value << " ("
+          << contents.size() << " bytes)\n";
 
   athena->contract_preload_list[address] = move(contents);
 
   return true;
 }
 
-evmc_set_option_result athena_set_option(
-  evmc_vm *instance,
-  char const *name,
-  char const *value
-) noexcept {
-  athena_instance* athena = static_cast<athena_instance*>(instance);
+evmc_set_option_result athena_set_option(evmc_vm *instance, char const *name,
+                                         char const *value) noexcept {
+  athena_instance *athena = static_cast<athena_instance *>(instance);
 
   if (strcmp(name, "evm1mode") == 0) {
     if (evm1mode_options.count(value)) {
@@ -536,16 +504,15 @@ evmc_set_option_result athena_set_option(
   return EVMC_SET_OPTION_INVALID_NAME;
 }
 
-void athena_destroy(evmc_vm* instance) noexcept
-{
-  athena_instance* athena = static_cast<athena_instance*>(instance);
+void athena_destroy(evmc_vm *instance) noexcept {
+  athena_instance *athena = static_cast<athena_instance *>(instance);
   delete athena;
 }
 
-evmc_capabilities_flagset athena_get_capabilities(evmc_vm* instance)
-{
+evmc_capabilities_flagset athena_get_capabilities(evmc_vm *instance) {
   evmc_capabilities_flagset caps = EVMC_CAPABILITY_EWASM;
-  if (static_cast<athena_instance*>(instance)->evm1mode != athena_evm1mode::reject)
+  if (static_cast<athena_instance *>(instance)->evm1mode !=
+      athena_evm1mode::reject)
     caps |= EVMC_CAPABILITY_EVM1;
   return caps;
 }
@@ -554,9 +521,8 @@ evmc_capabilities_flagset athena_get_capabilities(evmc_vm* instance)
 
 extern "C" {
 
-EVMC_EXPORT evmc_vm* evmc_create_athena() noexcept
-{
-  athena_instance* instance = new athena_instance;
+EVMC_EXPORT evmc_vm *evmc_create_athena() noexcept {
+  athena_instance *instance = new athena_instance;
   instance->destroy = athena_destroy;
   instance->execute = athena_execute;
   instance->get_capabilities = athena_get_capabilities;
@@ -566,10 +532,6 @@ EVMC_EXPORT evmc_vm* evmc_create_athena() noexcept
 
 #if athena_EXPORTS
 // If compiled as shared library, also export this symbol.
-EVMC_EXPORT evmc_vm* evmc_create() noexcept
-{
-  return evmc_create_athena();
-}
+EVMC_EXPORT evmc_vm *evmc_create() noexcept { return evmc_create_athena(); }
 #endif
-
 }

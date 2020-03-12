@@ -25,17 +25,18 @@ namespace athena {
 using bytes = std::basic_string<uint8_t>;
 using bytes_view = std::basic_string_view<uint8_t>;
 
-bytes loadFileContents(std::string const& path);
+bytes loadFileContents(std::string const &path);
 
-std::string toHex(evmc_uint256be const& value);
+std::string toHex(evmc_uint256be const &value);
 
-// Returns a formatted string (with prefix "0x") representing the bytes of an array.
+// Returns a formatted string (with prefix "0x") representing the bytes of an
+// array.
 std::string bytesAsHexStr(bytes_view bytes);
 
-bytes parseHexString(std::string const& input);
+bytes parseHexString(std::string const &input);
 
 bool hasWasmPreamble(bytes_view _input);
 
 bool hasWasmVersion(bytes_view _input, uint8_t _version);
 
-}
+} // namespace athena

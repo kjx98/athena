@@ -107,9 +107,7 @@ public:
 // WAVM/WABT host functions access this interface through an instance,
 // which requires public methods.
 // TODO: update upstream WAVM/WABT to have a context (user data) passed down.
-#if H_WAVM == 0 && H_WABT == 0
-protected:
-#endif
+//protected:
   virtual size_t memorySize() const = 0 ;
   virtual void memorySet(size_t offset, uint8_t value) = 0;
   virtual uint8_t memoryGet(size_t offset) = 0;

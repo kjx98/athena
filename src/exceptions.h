@@ -22,9 +22,10 @@ namespace athena {
 
 class AthenaException : public std::exception {
 public:
-  explicit AthenaException(): msg({}) {}
-  explicit AthenaException(std::string _msg): msg(std::move(_msg)) {}
-  const char* what() const noexcept override { return msg.c_str(); }
+  explicit AthenaException() : msg({}) {}
+  explicit AthenaException(std::string _msg) : msg(std::move(_msg)) {}
+  const char *what() const noexcept override { return msg.c_str(); }
+
 protected:
   std::string msg;
 };
@@ -57,17 +58,20 @@ class EndExecution : public AthenaException {
 /// in static mode.
 class StaticModeViolation : public AthenaException {
 public:
-  explicit StaticModeViolation(std::string const& _functionName):
-    AthenaException("Static mode violation in " + _functionName + ".")
-  {}
+  explicit StaticModeViolation(std::string const &_functionName)
+      : AthenaException("Static mode violation in " + _functionName + ".") {}
 };
 
-#define athenaAssert(condition, msg) { \
-  if (!(condition)) throw athena::InternalErrorException{msg}; \
-}
+#define athenaAssert(condition, msg)                                           \
+  {                                                                            \
+    if (!(condition))                                                          \
+      throw athena::InternalErrorException{msg};                               \
+  }
 
-#define ensureCondition(condition, ex, msg) { \
-  if (!(condition)) throw athena::ex{msg}; \
-}
+#define ensureCondition(condition, ex, msg)                                    \
+  {                                                                            \
+    if (!(condition))                                                          \
+      throw athena::ex{msg};                                                   \
+  }
 
-}
+} // namespace athena

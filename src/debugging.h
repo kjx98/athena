@@ -25,11 +25,12 @@ namespace athena {
 #else
 
 struct NullStream {
-  template<typename T> NullStream& operator<<(const T&) { return *this; }
+  template <typename T> NullStream &operator<<(const T &) { return *this; }
 };
 
-#define H_DEBUG true ? NullStream{} : NullStream{}
+#define H_DEBUG                                                                \
+  true ? NullStream{} : NullStream {}
 
 #endif
 
-}
+} // namespace athena

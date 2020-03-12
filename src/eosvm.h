@@ -25,14 +25,9 @@ public:
   /// Factory method to create the WAVM Wasm Engine.
   static std::unique_ptr<WasmEngine> create();
 
-  ExecutionResult execute(
-    evmc::HostContext& context,
-    bytes_view code,
-    bytes_view state_code,
-    evmc_message const& msg,
-    bool meterInterfaceGas
-  ) override;
-
+  ExecutionResult execute(evmc::HostContext &context, bytes_view code,
+                          bytes_view state_code, evmc_message const &msg,
+                          bool meterInterfaceGas) override;
 };
 
 } // namespace athena

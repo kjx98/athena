@@ -26,17 +26,16 @@ using namespace std;
 
 namespace athena {
 
-bytes loadFileContents(string const& path)
-{
+bytes loadFileContents(string const &path) {
   using iterator = istreambuf_iterator<ifstream::char_type>;
   ifstream is{path};
   return {iterator{is}, iterator{}};
 }
 
-string toHex(evmc_uint256be const& value) {
+string toHex(evmc_uint256be const &value) {
   ostringstream os;
   os << hex;
-  for (auto b: value.bytes)
+  for (auto b : value.bytes)
     os << setw(2) << setfill('0') << unsigned(b);
   return "0x" + os.str();
 }
@@ -51,7 +50,7 @@ string bytesAsHexStr(bytes_view input) {
 }
 
 namespace {
-bool nibble2value(unsigned input, unsigned& output) {
+bool nibble2value(unsigned input, unsigned &output) {
   if (input >= '0' && input <= '9') {
     output = input - '0';
     return true;
@@ -64,22 +63,23 @@ bool nibble2value(unsigned input, unsigned& output) {
   }
   return false;
 }
-}
+} // namespace
 
 // Hand rolled hex parser, because cross platform error handling is
 // more reliable than with strtol() and any of the built std function.
 //
-// Returns an empty vector if input is invalid (odd number of characters or invalid nibbles).
-// Assumes input is whitespace free, therefore if input is non-zero long an empty output
-// signals an error.
-bytes parseHexString(const string& input) {
+// Returns an empty vector if input is invalid (odd number of characters or
+// invalid nibbles). Assumes input is whitespace free, therefore if input is
+// non-zero long an empty output signals an error.
+bytes parseHexString(const string &input) {
   size_t len = input.length();
   if (len % 2 != 0)
     return {};
   bytes ret;
   for (size_t i = 0; i <= len - 2; i += 2) {
     unsigned lo, hi;
-    if (!nibble2value(unsigned(input[i]), hi) || !nibble2value(unsigned(input[i + 1]), lo))
+    if (!nibble2value(unsigned(input[i]), hi) ||
+        !nibble2value(unsigned(input[i + 1]), lo))
       return {};
     ret.push_back(static_cast<uint8_t>((hi << 4) | lo));
   }
@@ -87,21 +87,13 @@ bytes parseHexString(const string& input) {
 }
 
 bool hasWasmPreamble(bytes_view _input) {
-  return
-    _input.size() >= 8 &&
-    _input[0] == 0 &&
-    _input[1] == 'a' &&
-    _input[2] == 's' &&
-    _input[3] == 'm';
+  return _input.size() >= 8 && _input[0] == 0 && _input[1] == 'a' &&
+         _input[2] == 's' && _input[3] == 'm';
 }
 
 bool hasWasmVersion(bytes_view _input, uint8_t _version) {
-  return
-    _input.size() >= 8 &&
-    _input[4] == _version &&
-    _input[5] == 0 &&
-    _input[6] == 0 &&
-    _input[7] == 0;
+  return _input.size() >= 8 && _input[4] == _version && _input[5] == 0 &&
+         _input[6] == 0 && _input[7] == 0;
 }
 
-}
+} // namespace athena
