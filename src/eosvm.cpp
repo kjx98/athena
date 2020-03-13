@@ -76,15 +76,15 @@ public:
   void eGetCaller(uint8_t *result);
   void eStorageStore(bytes32 *path, bytes32 *valuePtr);
   void eStorageLoad(bytes32 *path, bytes32 *result);
-  void eFinish(uint8_t *dp, uint32_t siz) { eRevertOrFinish(false, dp, siz); }
-  void eRevert(uint8_t *dp, uint32_t siz) { eRevertOrFinish(true, dp, siz); }
+  void eFinish(void *dp, uint32_t siz) { eRevertOrFinish(false, dp, siz); }
+  void eRevert(void *dp, uint32_t siz) { eRevertOrFinish(true, dp, siz); }
 
 private:
 #if H_DEBUGGING
   void debugPrintMemImpl(bool, uint8_t *, uint32_t);
   void debugPrintStorageImpl(bool, uint8_t *);
 #endif
-  void eRevertOrFinish(bool revert, uint8_t *dp, uint32_t size);
+  void eRevertOrFinish(bool revert, void *dp, uint32_t size);
   size_t memorySize() const override { return 0; }
   void memorySet(size_t offset, uint8_t value) override {}
   uint8_t memoryGet(size_t offset) override { return 0; }
@@ -209,7 +209,7 @@ void EOSvmEthereumInterface::eStorageLoad(bytes32 *path, bytes32 *result) {
   *result = m_host.get_storage(m_msg.destination, *path);
 }
 
-void EOSvmEthereumInterface::eRevertOrFinish(bool revert, uint8_t *dp,
+void EOSvmEthereumInterface::eRevertOrFinish(bool revert, void *dp,
                                              uint32_t size) {
 #if H_DEBUGGING
   H_DEBUG << depthToString() << " " << (revert ? "revert " : "finish ") << hex

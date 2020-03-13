@@ -4,7 +4,6 @@
 #include <eosio/vm/base_visitor.hpp>
 #include <eosio/vm/exceptions.hpp>
 #include <eosio/vm/opcodes.hpp>
-#include <eosio/vm/softfloat.hpp>
 #include <eosio/vm/stack_elem.hpp>
 #include <eosio/vm/utils.hpp>
 #include <eosio/vm/wasm_stack.hpp>
@@ -415,109 +414,73 @@ namespace eosio { namespace vm {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f32();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f32_eq(lhs.to_f32(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f32() == rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f32() == rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f32_ne_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f32();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f32_ne(lhs.to_f32(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f32() != rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f32() != rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f32_lt_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f32();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f32_lt(lhs.to_f32(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f32() < rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f32() < rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f32_gt_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f32();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f32_gt(lhs.to_f32(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f32() > rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f32() > rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f32_le_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f32();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f32_le(lhs.to_f32(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f32() <= rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f32() <= rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f32_ge_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f32();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f32_ge(lhs.to_f32(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f32() >= rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f32() >= rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f64_eq_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f64();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f64_eq(lhs.to_f64(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f64() == rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f64() == rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f64_ne_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f64();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f64_ne(lhs.to_f64(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f64() != rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f64() != rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f64_lt_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f64();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f64_lt(lhs.to_f64(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f64() < rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f64() < rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f64_gt_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f64();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f64_gt(lhs.to_f64(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f64() > rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f64() > rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f64_le_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f64();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f64_le(lhs.to_f64(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f64() <= rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f64() <= rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const f64_ge_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand().to_f64();
          auto&       lhs = context.peek_operand();
-         if constexpr (use_softfloat)
-            lhs = i32_const_t{ (uint32_t)_eosio_f64_ge(lhs.to_f64(), rhs) };
-         else
-            lhs = i32_const_t{ (uint32_t)(lhs.to_f64() >= rhs) };
+         lhs = i32_const_t{ (uint32_t)(lhs.to_f64() >= rhs) };
       }
       [[gnu::always_inline]] inline void operator()(const i32_clz_t& op) {
          context.inc_pc();
@@ -774,240 +737,156 @@ namespace eosio { namespace vm {
       [[gnu::always_inline]] inline void operator()(const f32_abs_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            oper = _eosio_f32_abs(oper);
-         else
-            oper = __builtin_fabsf(oper);
+         oper = __builtin_fabsf(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f32_neg_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            oper = _eosio_f32_neg(oper);
-         else
-            oper = -oper;
+         oper = -oper;
       }
       [[gnu::always_inline]] inline void operator()(const f32_ceil_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            oper = _eosio_f32_ceil(oper);
-         else
-            oper = __builtin_ceilf(oper);
+         oper = __builtin_ceilf(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f32_floor_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            oper = _eosio_f32_floor(oper);
-         else
-            oper = __builtin_floorf(oper);
+         oper = __builtin_floorf(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f32_trunc_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            oper = _eosio_f32_trunc(oper);
-         else
-            oper = __builtin_trunc(oper);
+         oper = __builtin_trunc(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f32_nearest_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            oper = _eosio_f32_nearest(oper);
-         else
-            oper = __builtin_nearbyintf(oper);
+         oper = __builtin_nearbyintf(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f32_sqrt_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            oper = _eosio_f32_sqrt(oper);
-         else
-            oper = __builtin_sqrtf(oper);
+         oper = __builtin_sqrtf(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f32_add_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f32_add(lhs, rhs.to_f32());
-         else
-            lhs += rhs.to_f32();
+         lhs += rhs.to_f32();
       }
       [[gnu::always_inline]] inline void operator()(const f32_sub_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f32_sub(lhs, rhs.to_f32());
-         else
-            lhs -= rhs.to_f32();
+         lhs -= rhs.to_f32();
       }
       [[gnu::always_inline]] inline void operator()(const f32_mul_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f32();
-         if constexpr (use_softfloat) {
-            lhs = _eosio_f32_mul(lhs, rhs.to_f32());
-         } else
-            lhs *= rhs.to_f32();
+         lhs *= rhs.to_f32();
       }
       [[gnu::always_inline]] inline void operator()(const f32_div_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f32_div(lhs, rhs.to_f32());
-         else
-            lhs /= rhs.to_f32();
+         lhs /= rhs.to_f32();
       }
       [[gnu::always_inline]] inline void operator()(const f32_min_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f32_min(lhs, rhs.to_f32());
-         else
-            lhs = __builtin_fminf(lhs, rhs.to_f32());
+         lhs = __builtin_fminf(lhs, rhs.to_f32());
       }
       [[gnu::always_inline]] inline void operator()(const f32_max_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f32_max(lhs, rhs.to_f32());
-         else
-            lhs = __builtin_fmaxf(lhs, rhs.to_f32());
+         lhs = __builtin_fmaxf(lhs, rhs.to_f32());
       }
       [[gnu::always_inline]] inline void operator()(const f32_copysign_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f32();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f32_copysign(lhs, rhs.to_f32());
-         else
-            lhs = __builtin_copysignf(lhs, rhs.to_f32());
+         lhs = __builtin_copysignf(lhs, rhs.to_f32());
       }
       [[gnu::always_inline]] inline void operator()(const f64_abs_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            oper = _eosio_f64_abs(oper);
-         else
-            oper = __builtin_fabs(oper);
+         oper = __builtin_fabs(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f64_neg_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            oper = _eosio_f64_neg(oper);
-         else
-            oper = -oper;
+         oper = -oper;
       }
       [[gnu::always_inline]] inline void operator()(const f64_ceil_t& op) {
 
          context.inc_pc();
          auto& oper = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            oper = _eosio_f64_ceil(oper);
-         else
-            oper = __builtin_ceil(oper);
+         oper = __builtin_ceil(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f64_floor_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            oper = _eosio_f64_floor(oper);
-         else
-            oper = __builtin_floor(oper);
+         oper = __builtin_floor(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f64_trunc_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            oper = _eosio_f64_trunc(oper);
-         else
-            oper = __builtin_trunc(oper);
+         oper = __builtin_trunc(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f64_nearest_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            oper = _eosio_f64_nearest(oper);
-         else
-            oper = __builtin_nearbyint(oper);
+         oper = __builtin_nearbyint(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f64_sqrt_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            oper = _eosio_f64_sqrt(oper);
-         else
-            oper = __builtin_sqrt(oper);
+         oper = __builtin_sqrt(oper);
       }
       [[gnu::always_inline]] inline void operator()(const f64_add_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f64_add(lhs, rhs.to_f64());
-         else
-            lhs += rhs.to_f64();
+         lhs += rhs.to_f64();
       }
       [[gnu::always_inline]] inline void operator()(const f64_sub_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f64_sub(lhs, rhs.to_f64());
-         else
-            lhs -= rhs.to_f64();
+         lhs -= rhs.to_f64();
       }
       [[gnu::always_inline]] inline void operator()(const f64_mul_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f64_mul(lhs, rhs.to_f64());
-         else
-            lhs *= rhs.to_f64();
+         lhs *= rhs.to_f64();
       }
       [[gnu::always_inline]] inline void operator()(const f64_div_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f64_div(lhs, rhs.to_f64());
-         else
-            lhs /= rhs.to_f64();
+         lhs /= rhs.to_f64();
       }
       [[gnu::always_inline]] inline void operator()(const f64_min_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f64_min(lhs, rhs.to_f64());
-         else
-            lhs = __builtin_fmin(lhs, rhs.to_f64());
+         lhs = __builtin_fmin(lhs, rhs.to_f64());
       }
       [[gnu::always_inline]] inline void operator()(const f64_max_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f64_max(lhs, rhs.to_f64());
-         else
             lhs = __builtin_fmax(lhs, rhs.to_f64());
       }
       [[gnu::always_inline]] inline void operator()(const f64_copysign_t& op) {
          context.inc_pc();
          const auto& rhs = context.pop_operand();
          auto&       lhs = context.peek_operand().to_f64();
-         if constexpr (use_softfloat)
-            lhs = _eosio_f64_copysign(lhs, rhs.to_f64());
-         else
             lhs = __builtin_copysign(lhs, rhs.to_f64());
       }
       [[gnu::always_inline]] inline void operator()(const i32_wrap_i64_t& op) {
@@ -1018,50 +897,34 @@ namespace eosio { namespace vm {
       [[gnu::always_inline]] inline void operator()(const i32_trunc_s_f32_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = i32_const_t{ _eosio_f32_trunc_i32s(oper.to_f32()) };
-         } else {
             float af = oper.to_f32();
             EOS_VM_ASSERT(!((af >= 2147483648.0f) || (af < -2147483648.0f)), wasm_interpreter_exception, "Error, f32.trunc_s/i32 overflow" );
             EOS_VM_ASSERT(!__builtin_isnan(af), wasm_interpreter_exception, "Error, f32.trunc_s/i32 unrepresentable");
             oper = i32_const_t{ static_cast<int32_t>(af) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const i32_trunc_u_f32_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = i32_const_t{ _eosio_f32_trunc_i32u(oper.to_f32()) };
-         } else {
             float af = oper.to_f32();
             EOS_VM_ASSERT(!((af >= 4294967296.0f) || (af <= -1.0f)),wasm_interpreter_exception, "Error, f32.trunc_u/i32 overflow");
             EOS_VM_ASSERT(!__builtin_isnan(af), wasm_interpreter_exception, "Error, f32.trunc_u/i32 unrepresentable");
             oper = i32_const_t{ static_cast<uint32_t>(af) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const i32_trunc_s_f64_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = i32_const_t{ _eosio_f64_trunc_i32s(oper.to_f64()) };
-         } else {
             double af = oper.to_f64();
             EOS_VM_ASSERT(!((af >= 2147483648.0) || (af < -2147483648.0)), wasm_interpreter_exception, "Error, f64.trunc_s/i32 overflow");
             EOS_VM_ASSERT(!__builtin_isnan(af), wasm_interpreter_exception, "Error, f64.trunc_s/i32 unrepresentable");
             oper = i32_const_t{ static_cast<int32_t>(af) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const i32_trunc_u_f64_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = i32_const_t{ _eosio_f64_trunc_i32u(oper.to_f64()) };
-         } else {
             double af = oper.to_f64();
             EOS_VM_ASSERT(!((af >= 4294967296.0) || (af <= -1.0)), wasm_interpreter_exception, "Error, f64.trunc_u/i32 overflow");
             EOS_VM_ASSERT(!__builtin_isnan(af), wasm_interpreter_exception, "Error, f64.trunc_u/i32 unrepresentable");
             oper = i32_const_t{ static_cast<uint32_t>(af) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const i64_extend_s_i32_t& op) {
          context.inc_pc();
@@ -1076,45 +939,31 @@ namespace eosio { namespace vm {
       [[gnu::always_inline]] inline void operator()(const i64_trunc_s_f32_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = i64_const_t{ _eosio_f32_trunc_i64s(oper.to_f32()) };
-         } else {
             float af = oper.to_f32();
             EOS_VM_ASSERT(!((af >= 9223372036854775808.0f) || (af < -9223372036854775808.0f)), wasm_interpreter_exception, "Error, f32.trunc_s/i64 overflow");
             EOS_VM_ASSERT(!__builtin_isnan(af), wasm_interpreter_exception, "Error, f32.trunc_s/i64 unrepresentable");
             oper = i64_const_t{ static_cast<int64_t>(af) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const i64_trunc_u_f32_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = i64_const_t{ _eosio_f32_trunc_i64u(oper.to_f32()) };
-         } else {
             float af = oper.to_f32();
             EOS_VM_ASSERT(!((af >= 18446744073709551616.0f) || (af <= -1.0f)), wasm_interpreter_exception, "Error, f32.trunc_u/i64 overflow");
             EOS_VM_ASSERT(!__builtin_isnan(af), wasm_interpreter_exception, "Error, f32.trunc_u/i64 unrepresentable");
             oper = i64_const_t{ static_cast<uint64_t>(af) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const i64_trunc_s_f64_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = i64_const_t{ _eosio_f64_trunc_i64s(oper.to_f64()) };
-         } else {
             double af = oper.to_f64();
             EOS_VM_ASSERT(!((af >= 9223372036854775808.0) || (af < -9223372036854775808.0)), wasm_interpreter_exception, "Error, f64.trunc_s/i64 overflow");
             EOS_VM_ASSERT(!__builtin_isnan(af), wasm_interpreter_exception, "Error, f64.trunc_s/i64 unrepresentable");
             oper = i64_const_t{ static_cast<int64_t>(af) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const i64_trunc_u_f64_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = i64_const_t{ _eosio_f64_trunc_i64u(oper.to_f64()) };
-         } else {
+         {
             double af = oper.to_f64();
             EOS_VM_ASSERT(!((af >= 18446744073709551616.0) || (af <= -1.0)), wasm_interpreter_exception, "Error, f64.trunc_u/i64 overflow");
             EOS_VM_ASSERT(!__builtin_isnan(af), wasm_interpreter_exception, "Error, f64.trunc_u/i64 unrepresentable");
@@ -1124,92 +973,52 @@ namespace eosio { namespace vm {
       [[gnu::always_inline]] inline void operator()(const f32_convert_s_i32_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f32_const_t{ _eosio_i32_to_f32(oper.to_i32()) };
-         } else {
             oper = f32_const_t{ static_cast<float>(oper.to_i32()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const f32_convert_u_i32_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f32_const_t{ _eosio_ui32_to_f32(oper.to_ui32()) };
-         } else {
             oper = f32_const_t{ static_cast<float>(oper.to_ui32()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const f32_convert_s_i64_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f32_const_t{ _eosio_i64_to_f32(oper.to_i64()) };
-         } else {
             oper = f32_const_t{ static_cast<float>(oper.to_i64()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const f32_convert_u_i64_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f32_const_t{ _eosio_ui64_to_f32(oper.to_ui64()) };
-         } else {
             oper = f32_const_t{ static_cast<float>(oper.to_ui64()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const f32_demote_f64_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f32_const_t{ _eosio_f64_demote(oper.to_f64()) };
-         } else {
             oper = f32_const_t{ static_cast<float>(oper.to_f64()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const f64_convert_s_i32_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f64_const_t{ _eosio_i32_to_f64(oper.to_i32()) };
-         } else {
             oper = f64_const_t{ static_cast<double>(oper.to_i32()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const f64_convert_u_i32_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f64_const_t{ _eosio_ui32_to_f64(oper.to_ui32()) };
-         } else {
             oper = f64_const_t{ static_cast<double>(oper.to_ui32()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const f64_convert_s_i64_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f64_const_t{ _eosio_i64_to_f64(oper.to_i64()) };
-         } else {
             oper = f64_const_t{ static_cast<double>(oper.to_i64()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const f64_convert_u_i64_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f64_const_t{ _eosio_ui64_to_f64(oper.to_ui64()) };
-         } else {
             oper = f64_const_t{ static_cast<double>(oper.to_ui64()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const f64_promote_f32_t& op) {
          context.inc_pc();
          auto& oper = context.peek_operand();
-         if constexpr (use_softfloat) {
-            oper = f64_const_t{ _eosio_f32_promote(oper.to_f32()) };
-         } else {
             oper = f64_const_t{ static_cast<double>(oper.to_f32()) };
-         }
       }
       [[gnu::always_inline]] inline void operator()(const i32_reinterpret_f32_t& op) {
          context.inc_pc();
