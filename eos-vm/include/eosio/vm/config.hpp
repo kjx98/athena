@@ -10,11 +10,7 @@ namespace eosio { namespace vm {
 #endif
 
 
-#ifdef EOS_VM_SOFTFLOAT
-   inline constexpr bool use_softfloat = true;
-#else
-   inline constexpr bool use_softfloat = false;
-#endif
+//   inline constexpr bool use_softfloat = false;
 
 #ifdef EOS_VM_FULL_DEBUG
    inline constexpr bool eos_vm_debug = true;
