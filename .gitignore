@@ -13,6 +13,9 @@ CTestTestfile.cmake
 /build
 /downloads
 
+#patch
+*.orig
+
 # IntelliJ
 /.idea
 
