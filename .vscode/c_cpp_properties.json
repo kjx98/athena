@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                ".",
+                "${workspaceFolder}/include",
+				"${workspaceFolder}/eos-vm/include"
+            ],
+            "cppStandard": "c++11",
+            "cStandard": "c11"
+        }
+    ],
+    "version": 4
+}
