@@ -7,7 +7,7 @@
                 "${workspaceFolder}/include",
 				"${workspaceFolder}/eos-vm/include"
             ],
-            "cppStandard": "c++11",
+            "cppStandard": "c++17",
             "cStandard": "c11"
         }
     ],

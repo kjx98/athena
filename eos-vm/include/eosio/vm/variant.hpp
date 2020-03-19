@@ -190,11 +190,13 @@ namespace eosio { namespace vm {
       static inline constexpr size_t variant_size() { return sizeof...(Alternatives); }
       inline constexpr uint16_t      index() const { return _which; }
 
+#ifdef	ommit
       template <size_t Index>
       inline constexpr auto&& get_check() {
          // TODO add outcome stuff
          return 3;
       }
+#endif
 
       template <size_t Index>
       inline constexpr const auto& get() const & {

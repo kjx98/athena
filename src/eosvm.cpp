@@ -53,6 +53,7 @@ const string dbgMod = "debug";
 
 class EOSvmEthereumInterface;
 using backend_t = eosio::vm::backend<EOSvmEthereumInterface, eosio::vm::jit>;
+//using backend_t = eosio::vm::backend<EOSvmEthereumInterface>;
 
 class EOSvmEthereumInterface : public EthereumInterface {
 public:
@@ -294,17 +295,22 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
 	uint32_t main_idx = bkend.get_module().get_exported_function("main");
     // bkend.execute_all(null_watchdog());
     //bkend.call(&interface, "test", "main");
-    bkend.call(&interface, main_idx);
+    auto res = bkend.call(&interface, main_idx);
+    // Wrap any non-EEI exception under VMTrap.
+    ensureCondition(res, VMTrap, "The VM invocation had a trap.");
   } catch (wasm_exit_exception const &) {
     // This exception is ignored here because we consider it to be a success.
     // It is only a clutch for POSIX style exit()
-
+    ensureCondition(bkend.get_context().get_error_code().value() == 0, VMTrap,
+                    "The VM exit code not zero.");
   } catch (EndExecution const &) {
     // This exception is ignored here because we consider it to be a success.
-    // It is only a clutch for POSIX style exit()
+    // It is only a clutch for eth_finish() and eth_revert()
   } catch (const eosio::vm::exception &ex) {
     std::cerr << "eos-vm interpreter error\n";
     std::cerr << ex.what() << " : " << ex.detail() << "\n";
+	result.isRevert = true;
+	result.gasLeft = 0;
   }
   executionFinished();
   return result;

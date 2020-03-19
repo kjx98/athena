@@ -35,14 +35,14 @@ namespace eosio { namespace vm {
             storage[0] = v & 0x7f;
          }
          inline constexpr void from(uint32_t v) {
-	    bytes_used = 0;
+            bytes_used = 0;
             #pragma unroll
             for (; bytes_used < bytes_needed<N>(); bytes_used++) {
                storage[bytes_used] = v & 0x7f;
                v >>= 7;
                if (v!= 0)
                   storage[bytes_used] |= 0x80;
-	       else
+               else
                   break;
             }
             bytes_used++;
@@ -171,12 +171,12 @@ namespace eosio { namespace vm {
             bytes_used = 0;
             #pragma unroll
             for (; bytes_used < bytes_needed<N>(); bytes_used++) {
-	       storage[bytes_used] = v & 0x7f;
-	       v >>= 7;
-	       if ((v == -1 && (storage[bytes_used] & 0x40)) || (v == 0 && !(storage[bytes_used] & 0x40)))
+               storage[bytes_used] = v & 0x7f;
+               v >>= 7;
+               if ((v == -1 && (storage[bytes_used] & 0x40)) || (v == 0 && !(storage[bytes_used] & 0x40)))
                   break;
-	       storage[bytes_used] |= 0x80;
-	    }
+               storage[bytes_used] |= 0x80;
+            }
             bytes_used++;
          }
 

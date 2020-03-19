@@ -26,7 +26,7 @@ namespace eosio { namespace vm {
       }
       template <typename T>
       T* alloc(size_t size = 1) {
-         EOS_VM_ASSERT((sizeof(T) * size) + index <= mem_size, wasm_bad_alloc, "wasm failed to allocate native");
+         EOS_VM_ASSERT((sizeof(T) * size) + index <= mem_size, wasm_bad_alloc, "wasm bounded_allocator failed to allocate native");
          T* ret = (T*)(raw.get() + index);
          index += sizeof(T) * size;
          return ret;
@@ -58,7 +58,7 @@ namespace eosio { namespace vm {
          contiguous_allocator(size_t size) {
             _size = align_to_page(size);
             _base = (char*)mmap(NULL, _size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-            EOS_VM_ASSERT(_base != MAP_FAILED, wasm_bad_alloc, "mmap failed.");
+            EOS_VM_ASSERT(_base != MAP_FAILED, wasm_bad_alloc, "contiguous_allocator mmap failed.");
          }
          ~contiguous_allocator() { munmap(_base, align_to_page(_size)); }
 
@@ -232,7 +232,7 @@ namespace eosio { namespace vm {
 
    class growable_allocator {
     public:
-      static constexpr size_t max_memory_size = 64 * 1024 * 1024;   // 64MB
+      static constexpr size_t max_memory_size = 128 * 1024 * 1024;  // 128MB
       static constexpr size_t chunk_size      = 128 * 1024;         // 128KB
       template<std::size_t align_amt>
       static constexpr size_t align_offset(size_t offset) { return (offset + align_amt - 1) & ~(align_amt - 1); }
@@ -247,7 +247,7 @@ namespace eosio { namespace vm {
       growable_allocator(size_t size) {
          EOS_VM_ASSERT(size <= max_memory_size, wasm_bad_alloc, "Too large initial memory size");
          _base = (char*)mmap(NULL, max_memory_size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-         EOS_VM_ASSERT(_base != MAP_FAILED, wasm_bad_alloc, "mmap failed.");
+         EOS_VM_ASSERT(_base != MAP_FAILED, wasm_bad_alloc, "growable_allocator mmap failed.");
          if (size != 0) {
             size_t chunks_to_alloc = (align_offset<chunk_size>(size) / chunk_size);
             _size += (chunk_size * chunks_to_alloc);
@@ -380,7 +380,7 @@ namespace eosio { namespace vm {
       void alloc(size_t size = 1 /*in pages*/) {
          if (size == 0) return;
          EOS_VM_ASSERT(page != -1, wasm_bad_alloc, "require memory to allocate");
-         EOS_VM_ASSERT(size <= max_pages - page, wasm_bad_alloc, "exceeded max number of pages");
+         EOS_VM_ASSERT(size <= max_pages - page, wasm_bad_alloc, "wasm_allocator exceeded max number of pages");
          int err = mprotect(raw + (page_size * page), (page_size * size), PROT_READ | PROT_WRITE);
          EOS_VM_ASSERT(err == 0, wasm_bad_alloc, "mprotect failed");
          T* ptr    = (T*)(raw + (page_size * page));
@@ -403,7 +403,7 @@ namespace eosio { namespace vm {
       wasm_allocator() {
          std::size_t syspagesize = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
          raw  = (char*)mmap(NULL, max_memory + 2*syspagesize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-         EOS_VM_ASSERT( raw != MAP_FAILED, wasm_bad_alloc, "mmap failed to alloca pages" );
+         EOS_VM_ASSERT( raw != MAP_FAILED, wasm_bad_alloc, "wasm_allocator mmap failed to alloca pages" );
          int err = mprotect(raw, syspagesize, PROT_READ);
          EOS_VM_ASSERT(err == 0, wasm_bad_alloc, "mprotect failed");
          raw += syspagesize;

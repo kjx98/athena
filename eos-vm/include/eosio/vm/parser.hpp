@@ -358,7 +358,7 @@ namespace eosio { namespace vm {
 
       static constexpr uint8_t any_type = 0x82;
       struct operand_stack_type_tracker {
-        std::vector<uint8_t> state = { scope_tag };
+         std::vector<uint8_t> state = { scope_tag };
          static constexpr uint8_t unreachable_tag = 0x80;
          static constexpr uint8_t scope_tag = 0x81;
          uint32_t operand_depth = 0;
