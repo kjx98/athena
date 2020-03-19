@@ -273,8 +273,9 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
 #if H_DEBUGGING
   H_DEBUG << "Reading ewasm with eosvm...\n";
 #endif
-  wasm_code wcode(code.begin(), code.end());
-  backend_t bkend(wcode);
+  wasm_code_ptr	wcodePtr((uint8_t *)code.data(), code.size());
+  //wasm_code wcode(code.begin(), code.end());
+  backend_t bkend(wcodePtr, code.size());
   bkend.set_wasm_allocator(&wa);
 
 #if H_DEBUGGING
