@@ -50,9 +50,9 @@ Please also check the build options listed in the following section.
 
 *TODO -- Complete support.*
 
-[EOS-VM] support needs to be enabled via the following build option and requested at runtime with `engine=eosvm`:
+[EOS VM] support needs to be enabled via the following build option and requested at runtime with `engine=eosvm`:
 
-- `-DH_EOS=ON` will request the compilation of WAVM support
+- `-DH_EOS=ON`
 
 ## Runtime options
 
