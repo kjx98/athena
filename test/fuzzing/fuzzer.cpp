@@ -14,59 +14,54 @@
  * limitations under the License.
  */
 
-#include <hera/hera.h>
 #include <evmc/helpers.h>
+#include <hera/hera.h>
 #include <initializer_list>
 #include <utility>
 
-class Hera
-{
+class Hera {
 public:
-    ~Hera() noexcept { m_instance->destroy(m_instance); }
+  ~Hera() noexcept { m_instance->destroy(m_instance); }
 
-    Hera(std::initializer_list<std::pair<const char*, const char*>> options)
-      : m_instance{evmc_create_hera()}
-    {
-        for (auto option : options)
-            evmc_set_option(m_instance, option.first, option.second);
-    }
+  Hera(std::initializer_list<std::pair<const char *, const char *>> options)
+      : m_instance{evmc_create_hera()} {
+    for (auto option : options)
+      evmc_set_option(m_instance, option.first, option.second);
+  }
 
-    evmc_result execute(
-        evmc_revision rev, const evmc_message& msg, const uint8_t* code, size_t code_size) noexcept
-    {
-        return m_instance->execute(m_instance, nullptr, rev, &msg, code, code_size);
-    }
+  evmc_result execute(evmc_revision rev, const evmc_message &msg,
+                      const uint8_t *code, size_t code_size) noexcept {
+    return m_instance->execute(m_instance, nullptr, rev, &msg, code, code_size);
+  }
 
 private:
-    evmc_instance* const m_instance = nullptr;
+  evmc_instance *const m_instance = nullptr;
 };
 
-inline void expect(bool test) noexcept
-{
-    if (!test)
-        __builtin_trap();
+inline void expect(bool test) noexcept {
+  if (!test)
+    __builtin_trap();
 }
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* input, size_t size)
-{
-    Hera heraBinaryen{{"engine", "binaryen"}};
-    Hera heraWabt{{"engine", "wabt"}};
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *input, size_t size) {
+  Hera heraBinaryen{{"engine", "binaryen"}};
+  Hera heraWabt{{"engine", "wabt"}};
 
-    evmc_message msg{};
-    msg.kind = EVMC_CREATE;
-    msg.gas = 100000;
+  evmc_message msg{};
+  msg.kind = EVMC_CREATE;
+  msg.gas = 100000;
 
-    auto resBinaryen = heraBinaryen.execute(EVMC_BYZANTIUM, msg, input, size);
-    auto resWabt = heraBinaryen.execute(EVMC_BYZANTIUM, msg, input, size);
+  auto resBinaryen = heraBinaryen.execute(EVMC_BYZANTIUM, msg, input, size);
+  auto resWabt = heraBinaryen.execute(EVMC_BYZANTIUM, msg, input, size);
 
-    expect(resBinaryen.gas_left == resWabt.gas_left);
-    expect(resBinaryen.output_size == resWabt.output_size);
-    expect(resBinaryen.status_code == resWabt.status_code);
+  expect(resBinaryen.gas_left == resWabt.gas_left);
+  expect(resBinaryen.output_size == resWabt.output_size);
+  expect(resBinaryen.status_code == resWabt.status_code);
 
-    if (resBinaryen.release)
-        resBinaryen.release(&resBinaryen);
-    if (resWabt.release)
-        resWabt.release(&resWabt);
+  if (resBinaryen.release)
+    resBinaryen.release(&resBinaryen);
+  if (resWabt.release)
+    resWabt.release(&resWabt);
 
-    return 0;
+  return 0;
 }

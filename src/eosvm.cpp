@@ -53,7 +53,7 @@ const string dbgMod = "debug";
 
 class EOSvmEthereumInterface;
 using backend_t = eosio::vm::backend<EOSvmEthereumInterface, eosio::vm::jit>;
-//using backend_t = eosio::vm::backend<EOSvmEthereumInterface>;
+// using backend_t = eosio::vm::backend<EOSvmEthereumInterface>;
 
 class EOSvmEthereumInterface : public EthereumInterface {
 public:
@@ -273,8 +273,8 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
 #if H_DEBUGGING
   H_DEBUG << "Reading ewasm with eosvm...\n";
 #endif
-  wasm_code_ptr	wcodePtr((uint8_t *)code.data(), code.size());
-  //wasm_code wcode(code.begin(), code.end());
+  wasm_code_ptr wcodePtr((uint8_t *)code.data(), code.size());
+  // wasm_code wcode(code.begin(), code.end());
   backend_t bkend(wcodePtr, code.size());
   bkend.set_wasm_allocator(&wa);
 
@@ -293,9 +293,9 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
                                    meterInterfaceGas};
   executionStarted();
   try {
-	uint32_t main_idx = bkend.get_module().get_exported_function("main");
+    uint32_t main_idx = bkend.get_module().get_exported_function("main");
     // bkend.execute_all(null_watchdog());
-    //bkend.call(&interface, "test", "main");
+    // bkend.call(&interface, "test", "main");
     auto res = bkend.call(&interface, main_idx);
     // Wrap any non-EEI exception under VMTrap.
     ensureCondition(res, VMTrap, "The VM invocation had a trap.");
@@ -310,8 +310,8 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
   } catch (const eosio::vm::exception &ex) {
     std::cerr << "eos-vm interpreter error\n";
     std::cerr << ex.what() << " : " << ex.detail() << "\n";
-	result.isRevert = true;
-	result.gasLeft = 0;
+    result.isRevert = true;
+    result.gasLeft = 0;
   }
   executionFinished();
   return result;

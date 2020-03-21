@@ -284,7 +284,7 @@
 
 #define EOS_VM_CREATE_STRINGS(name, code) #name,
 
-#define EOS_VM_CREATE_MAP(name, code) { code, #name },
+#define EOS_VM_CREATE_MAP(name, code) {code, #name},
 
 #define EOS_VM_OPCODE_NAME_if_
 #define EOS_VM_OPCODE_NAME_else_
@@ -294,132 +294,140 @@
 #define EOS_VM_OPCODE_NAME_TEST_EOS_VM_OPCODE_NAME_TEST 0,
 #define EOS_VM_OPCODE_NAME_TEST_1 1, ignore
 #define EOS_VM_EXPAND(x) x
-#define EOS_VM_CAT2(x, y) x ## y
+#define EOS_VM_CAT2(x, y) x##y
 #define EOS_VM_CAT(x, y) EOS_VM_CAT2(x, y)
 #define EOS_VM_APPLY(f, args) f args
-#define EOS_VM_FIX_OPCODE_NAME_0(name) name ## _t
-#define EOS_VM_FIX_OPCODE_NAME_1(name) name ## t
-#define EOS_VM_FIX_OPCODE_NAME(iskeyword, garbage) EOS_VM_FIX_OPCODE_NAME_ ## iskeyword
+#define EOS_VM_FIX_OPCODE_NAME_0(name) name##_t
+#define EOS_VM_FIX_OPCODE_NAME_1(name) name##t
+#define EOS_VM_FIX_OPCODE_NAME(iskeyword, garbage)                             \
+  EOS_VM_FIX_OPCODE_NAME_##iskeyword
 
-#define EOS_VM_OPCODE_T(name)                                                             \
-   EOS_VM_APPLY(EOS_VM_FIX_OPCODE_NAME,                                                   \
-      (EOS_VM_CAT(EOS_VM_OPCODE_NAME_TEST_,                                               \
-           EOS_VM_EXPAND(EOS_VM_OPCODE_NAME_TEST EOS_VM_OPCODE_NAME_ ## name ()))))(name)
+#define EOS_VM_OPCODE_T(name)                                                  \
+  EOS_VM_APPLY(                                                                \
+      EOS_VM_FIX_OPCODE_NAME,                                                  \
+      (EOS_VM_CAT(EOS_VM_OPCODE_NAME_TEST_,                                    \
+                  EOS_VM_EXPAND(                                               \
+                      EOS_VM_OPCODE_NAME_TEST EOS_VM_OPCODE_NAME_##name()))))  \
+  (name)
 
-#define EOS_VM_CREATE_EXIT_TYPE(name, code)                                                                      \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      uint32_t pc;                                                                                                     \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_EXIT_TYPE(name, code)                                    \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    uint32_t pc;                                                               \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_CONTROL_FLOW_TYPES(name, code)                                                                   \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() {}                                                                                       \
-      EOS_VM_OPCODE_T(name)(uint32_t dat) : data(dat) {}                                                             \
-      EOS_VM_OPCODE_T(name)(uint32_t d, uint32_t pc_, uint16_t i, uint16_t oi)                                          \
-        : data(d), pc(pc_), index(i), op_index(oi) {}                                                                   \
-      uint32_t data     = 0;                                                                                           \
-      uint32_t pc       = 0;                                                                                           \
-      uint16_t index    = 0;                                                                                           \
-      uint16_t op_index = 0;                                                                                           \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_CONTROL_FLOW_TYPES(name, code)                           \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() {}                                                 \
+    EOS_VM_OPCODE_T(name)(uint32_t dat) : data(dat) {}                         \
+    EOS_VM_OPCODE_T(name)                                                      \
+    (uint32_t d, uint32_t pc_, uint16_t i, uint16_t oi)                        \
+        : data(d), pc(pc_), index(i), op_index(oi) {}                          \
+    uint32_t data = 0;                                                         \
+    uint32_t pc = 0;                                                           \
+    uint16_t index = 0;                                                        \
+    uint16_t op_index = 0;                                                     \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_BR_TABLE_TYPE(name, code)                                                                        \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      struct elem_t { uint32_t pc; uint32_t stack_pop; };                                                              \
-      elem_t* table;                                                                                                   \
-      uint32_t  size;                                                                                                  \
-      uint32_t  offset;                                                                                                \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_BR_TABLE_TYPE(name, code)                                \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    struct elem_t {                                                            \
+      uint32_t pc;                                                             \
+      uint32_t stack_pop;                                                      \
+    };                                                                         \
+    elem_t *table;                                                             \
+    uint32_t size;                                                             \
+    uint32_t offset;                                                           \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_TYPES(name, code)                                                                                \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_TYPES(name, code)                                        \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_CALL_TYPES(name, code)                                                                           \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      uint32_t index;                                                                                                  \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_CALL_TYPES(name, code)                                   \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    uint32_t index;                                                            \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_CALL_IMM_TYPES(name, code)                                                                       \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      uint32_t index;                                                                                                  \
-      uint16_t locals;                                                                                                 \
-      uint16_t return_type;                                                                                            \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_CALL_IMM_TYPES(name, code)                               \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    uint32_t index;                                                            \
+    uint16_t locals;                                                           \
+    uint16_t return_type;                                                      \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_VARIABLE_ACCESS_TYPES(name, code)                                                                \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      uint32_t index;                                                                                                  \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_VARIABLE_ACCESS_TYPES(name, code)                        \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    uint32_t index;                                                            \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_MEMORY_TYPES(name, code)                                                                         \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      uint32_t flags_align;                                                                                            \
-      uint32_t offset;                                                                                                 \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_MEMORY_TYPES(name, code)                                 \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    uint32_t flags_align;                                                      \
+    uint32_t offset;                                                           \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_I32_CONSTANT_TYPE(name, code)                                                                    \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      explicit EOS_VM_OPCODE_T(name)(uint32_t n) { data.ui = n; }                                                      \
-      explicit EOS_VM_OPCODE_T(name)(int32_t n) { data.i = n; }                                                        \
-      union {                                                                                                          \
-         uint32_t ui;                                                                                                  \
-         int32_t  i;                                                                                                   \
-      } data;                                                                                                          \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_I32_CONSTANT_TYPE(name, code)                            \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    explicit EOS_VM_OPCODE_T(name)(uint32_t n) { data.ui = n; }                \
+    explicit EOS_VM_OPCODE_T(name)(int32_t n) { data.i = n; }                  \
+    union {                                                                    \
+      uint32_t ui;                                                             \
+      int32_t i;                                                               \
+    } data;                                                                    \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_I64_CONSTANT_TYPE(name, code)                                                                    \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      explicit EOS_VM_OPCODE_T(name)(uint64_t n) { data.ui = n; }                                                      \
-      explicit EOS_VM_OPCODE_T(name)(int64_t n) { data.i = n; }                                                        \
-      union {                                                                                                          \
-         uint64_t ui;                                                                                                  \
-         int64_t  i;                                                                                                   \
-      } data;                                                                                                          \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_I64_CONSTANT_TYPE(name, code)                            \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    explicit EOS_VM_OPCODE_T(name)(uint64_t n) { data.ui = n; }                \
+    explicit EOS_VM_OPCODE_T(name)(int64_t n) { data.i = n; }                  \
+    union {                                                                    \
+      uint64_t ui;                                                             \
+      int64_t i;                                                               \
+    } data;                                                                    \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_F32_CONSTANT_TYPE(name, code)                                                                    \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      explicit EOS_VM_OPCODE_T(name)(uint32_t n) { data.ui = n; }                                                      \
-      explicit EOS_VM_OPCODE_T(name)(float n) { data.f = n; }                                                          \
-      union {                                                                                                          \
-         uint32_t ui;                                                                                                  \
-         float    f;                                                                                                   \
-      } data;                                                                                                          \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_F32_CONSTANT_TYPE(name, code)                            \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    explicit EOS_VM_OPCODE_T(name)(uint32_t n) { data.ui = n; }                \
+    explicit EOS_VM_OPCODE_T(name)(float n) { data.f = n; }                    \
+    union {                                                                    \
+      uint32_t ui;                                                             \
+      float f;                                                                 \
+    } data;                                                                    \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
-#define EOS_VM_CREATE_F64_CONSTANT_TYPE(name, code)                                                                    \
-   struct EOS_VM_OPCODE_T(name) {                                                                                      \
-      EOS_VM_OPCODE_T(name)() = default;                                                                               \
-      explicit EOS_VM_OPCODE_T(name)(uint64_t n) { data.ui = n; }                                                      \
-      explicit EOS_VM_OPCODE_T(name)(double n) { data.f = n; }                                                         \
-      union {                                                                                                          \
-         uint64_t ui;                                                                                                  \
-         double   f;                                                                                                   \
-      } data;                                                                                                          \
-      static constexpr uint8_t opcode = code;                                                                          \
-   };
+#define EOS_VM_CREATE_F64_CONSTANT_TYPE(name, code)                            \
+  struct EOS_VM_OPCODE_T(name) {                                               \
+    EOS_VM_OPCODE_T(name)() = default;                                         \
+    explicit EOS_VM_OPCODE_T(name)(uint64_t n) { data.ui = n; }                \
+    explicit EOS_VM_OPCODE_T(name)(double n) { data.f = n; }                   \
+    union {                                                                    \
+      uint64_t ui;                                                             \
+      double f;                                                                \
+    } data;                                                                    \
+    static constexpr uint8_t opcode = code;                                    \
+  };
 
 #define EOS_VM_IDENTITY(name, code) eosio::vm::EOS_VM_OPCODE_T(name),
 #define EOS_VM_IDENTITY_END(name, code) eosio::vm::EOS_VM_OPCODE_T(name)

@@ -64,7 +64,7 @@ const map<string, WasmEngineCreateFn> wasm_engine_map {
   {"eosvm", EOSvmEngine::create},
 #endif
 #if H_WABT
-  {"wabt", WabtEngine::create},
+      {"wabt", WabtEngine::create},
 #endif
 };
 

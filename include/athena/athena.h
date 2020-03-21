@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-EVMC_EXPORT evmc_vm* evmc_create_athena(void) noexcept;
+EVMC_EXPORT evmc_vm *evmc_create_athena(void) noexcept;
 
 #if __cplusplus
 }
