@@ -73,10 +73,12 @@ public:
   void dbgPrintStorage(uint8_t *dp) { debugPrintStorageImpl(false, dp); }
   void dbgPrintStorageHex(uint8_t *dp) { debugPrintStorageImpl(true, dp); }
 #endif
-  void eCallDataCopy(uint8_t *result, uint32_t dataOffset, uint32_t length);
-  void eGetCaller(uint8_t *result);
+  void eGetAddress(uint8_t *result);
   void eStorageStore(bytes32 *path, bytes32 *valuePtr);
   void eStorageLoad(bytes32 *path, bytes32 *result);
+  void eGetCaller(uint8_t *result);
+  void eSelfDestruct(address *result);
+  void eCallDataCopy(uint8_t *result, uint32_t dataOffset, uint32_t length);
   void eFinish(void *dp, uint32_t siz) { eRevertOrFinish(false, dp, siz); }
   void eRevert(void *dp, uint32_t siz) { eRevertOrFinish(true, dp, siz); }
 
@@ -176,6 +178,23 @@ void EOSvmEthereumInterface::eGetCaller(uint8_t *result) {
   memcpy(result, &m_msg.sender, sizeof(m_msg.sender));
 }
 
+void EOSvmEthereumInterface::eGetAddress(uint8_t *result) {
+  H_DEBUG << depthToString() << " getAddress " << hex
+          << (uint32_t)((uint64_t)result) << dec << "\n";
+
+  takeInterfaceGas(GasSchedule::base);
+  memcpy(result, &m_msg.destination, sizeof(m_msg.destination));
+}
+
+void EOSvmEthereumInterface::eSelfDestruct(address *result) {
+  H_DEBUG << depthToString() << " selfDestruct " << hex
+          << (uint32_t)((uint64_t)result) << dec << "\n";
+
+  takeInterfaceGas(GasSchedule::balance);
+  m_host.selfdestruct(m_msg.destination, *result);
+  throw EndExecution{};
+}
+
 void EOSvmEthereumInterface::eStorageStore(bytes32 *path, bytes32 *valuePtr) {
   H_DEBUG << depthToString() << " storageStore " << hex
           << (uint32_t)((uint64_t)path) << " " << (uint32_t)((uint64_t)valuePtr)
@@ -252,12 +271,16 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
       ethMod, "getCallDataSize");
   rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eCallDataCopy,
              wasm_allocator>(ethMod, "callDataCopy");
-  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eGetCaller,
-             wasm_allocator>(ethMod, "getCaller");
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eGetAddress,
+             wasm_allocator>(ethMod, "getAddress");
   rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eStorageStore,
              wasm_allocator>(ethMod, "storageStore");
   rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eStorageLoad,
              wasm_allocator>(ethMod, "storageLoad");
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eGetCaller,
+             wasm_allocator>(ethMod, "getCaller");
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eSelfDestruct,
+             wasm_allocator>(ethMod, "selfDestruct");
 #if H_DEBUGGING
   rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::dbgPrint,
              wasm_allocator>(dbgMod, "print");
@@ -267,9 +290,20 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
              wasm_allocator>(dbgMod, "print64");
   rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::dbgPrintMem,
              wasm_allocator>(dbgMod, "printMem");
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::dbgPrintMemHex,
+             wasm_allocator>(dbgMod, "printMemHex");
   rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::dbgPrintStorage,
              wasm_allocator>(dbgMod, "printStorage");
+  rhf_t::add<EOSvmEthereumInterface,
+             &EOSvmEthereumInterface::dbgPrintStorageHex, wasm_allocator>(
+      dbgMod, "printStorageHex");
 #endif
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eeiUseGas,
+             wasm_allocator>(ethMod, "useGas");
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eeiGetGasLeft,
+             wasm_allocator>(ethMod, "getGasLeft");
+  rhf_t::add<EOSvmEthereumInterface, &EOSvmEthereumInterface::eeiGetBlockNumber,
+             wasm_allocator>(ethMod, "getBlockNumber");
 #if H_DEBUGGING
   H_DEBUG << "Reading ewasm with eosvm...\n";
 #endif
