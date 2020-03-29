@@ -35,7 +35,9 @@ inline void signal_handler(int sig, siginfo_t *info, void *uap) {
       prev_action = &prev_signal_handler<SIGFPE>;
       break;
     default:
-      std::abort();
+      if (!prev_action)
+        return;
+      // std::abort();
     }
     if (!prev_action)
       std::abort();

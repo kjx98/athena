@@ -38,7 +38,7 @@ public:
   }
 
   void free() {
-    EOS_VM_ASSERT(index > 0, wasm_double_free, "double free");
+    EOS_VM_ASSERT(index > 0, wasm_double_free, "bounded_alloc double free");
     index = 0;
   }
   void reset() { index = 0; }

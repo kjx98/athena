@@ -345,7 +345,7 @@ ExecutionResult EOSvmEngine::execute(evmc::HostContext &context,
     std::cerr << "eos-vm interpreter error\n";
     std::cerr << ex.what() << " : " << ex.detail() << "\n";
     result.isRevert = true;
-    result.gasLeft = 0;
+    // result.gasLeft = 0;
   }
   executionFinished();
   return result;
