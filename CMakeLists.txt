@@ -57,7 +57,6 @@ endif()
 option(H_EOS "Build with eos-vm" OFF)
 if (H_EOS)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
-#    add_compile_options(-pthread)
     include_directories ( eos-vm/include )
 endif()
 

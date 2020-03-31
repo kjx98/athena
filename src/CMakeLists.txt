@@ -49,7 +49,6 @@ endif()
 
 if(H_EOS)
     target_compile_definitions(athena PRIVATE H_EOS=1)
-#    target_link_libraries(athena PRIVATE pthread)
     target_link_libraries(athena PRIVATE Threads::Threads)
 endif()
 
