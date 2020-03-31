@@ -22,6 +22,8 @@
 #include <map>
 #include <memory>
 #include <unistd.h>
+#include <csignal>
+#include <execinfo.h>
 
 #include <evmc/evmc.h>
 
@@ -519,9 +521,37 @@ evmc_capabilities_flagset athena_get_capabilities(evmc_vm *instance) {
 
 } // anonymous namespace
 
+void sig_abrt(int sig)
+{
+	const int	BT_BUF_SIZE=100;
+	if (sig == SIGABRT) {
+		void *buffer[BT_BUF_SIZE];
+		char **strings;
+		auto nptrs = backtrace(buffer, BT_BUF_SIZE);
+		cerr << "backtrace() returned " << nptrs << " addresses\n";
+		strings = backtrace_symbols(buffer, nptrs);
+		if (strings == nullptr) {
+			perror("backtrace_symbols");
+		} else {
+			for (auto i=0;i<nptrs; ++i)
+				cerr << strings[i] << std::endl;
+			free(strings);
+		}
+	} else {
+		cerr << "Unexpected signal " << sig << " received\n";
+	}
+	std::_Exit(EXIT_FAILURE);
+}
+
+
 extern "C" {
 
 EVMC_EXPORT evmc_vm *evmc_create_athena() noexcept {
+  auto prev_hdl = std::signal(SIGABRT, sig_abrt);
+  if (prev_hdl == SIG_ERR) {
+	cerr << "setup SIGABRT failed\n";
+	return nullptr;
+  }
   athena_instance *instance = new athena_instance;
   instance->destroy = athena_destroy;
   instance->execute = athena_execute;
