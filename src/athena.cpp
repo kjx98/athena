@@ -521,10 +521,10 @@ evmc_capabilities_flagset athena_get_capabilities(evmc_vm *instance) {
 
 } // anonymous namespace
 
-void sig_abrt(int sig)
+void sig_core(int sig)
 {
 	const int	BT_BUF_SIZE=100;
-	if (sig == SIGABRT) {
+	if (sig == SIGBUS || sig == SIGSEGV) {
 		void *buffer[BT_BUF_SIZE];
 		char **strings;
 		auto nptrs = backtrace(buffer, BT_BUF_SIZE);
@@ -540,16 +540,16 @@ void sig_abrt(int sig)
 	} else {
 		cerr << "Unexpected signal " << sig << " received\n";
 	}
-	std::_Exit(EXIT_FAILURE);
+	std::abort();
 }
 
 
 extern "C" {
 
 EVMC_EXPORT evmc_vm *evmc_create_athena() noexcept {
-  auto prev_hdl = std::signal(SIGABRT, sig_abrt);
+  auto prev_hdl = std::signal(SIGSEGV, sig_core);
   if (prev_hdl == SIG_ERR) {
-	cerr << "setup SIGABRT failed\n";
+	cerr << "setup SIGSEGV failed\n";
 	return nullptr;
   }
   athena_instance *instance = new athena_instance;
