@@ -173,7 +173,6 @@ public:
   }
 
   void emit_unreachable() {
-    auto icount = fixed_size_instr(16);
     emit_error_handler(&on_unreachable);
   }
   void emit_nop() {}
@@ -185,7 +184,6 @@ public:
   void emit_block() {}
   void *emit_loop() { return code; }
   void *emit_if() {
-    auto icount = fixed_size_instr(9);
     // pop RAX
     emit_bytes(0x58);
     // test EAX, EAX
@@ -195,7 +193,6 @@ public:
     return emit_branch_target32();
   }
   void *emit_else(void *if_loc) {
-    auto icount = fixed_size_instr(5);
     void *result = emit_br(0);
     fix_branch(if_loc, code);
     return result;
@@ -377,7 +374,6 @@ public:
   }
 
   void emit_select() {
-    auto icount = fixed_size_instr(13);
     // popq RAX
     emit_bytes(0x58);
     // popq RCX
@@ -391,7 +387,6 @@ public:
   }
 
   void emit_get_local(uint32_t local_idx) {
-    auto icount = fixed_size_instr(8);
     // stack layout:
     //   param0    <----- %rbp + 8*(nparams + 1)
     //   param1
@@ -420,7 +415,6 @@ public:
   }
 
   void emit_set_local(uint32_t local_idx) {
-    auto icount = fixed_size_instr(8);
     if (local_idx < _ft->param_types.size()) {
       // pop RAX
       emit_bytes(0x58);
@@ -437,7 +431,6 @@ public:
   }
 
   void emit_tee_local(uint32_t local_idx) {
-    auto icount = fixed_size_instr(9);
     if (local_idx < _ft->param_types.size()) {
       // pop RAX
       emit_bytes(0x58);
@@ -485,7 +478,6 @@ public:
     }
   }
   void emit_set_global(uint32_t globalidx) {
-    auto icount = fixed_size_instr(14);
     auto &gl = _mod.globals[globalidx];
     void *ptr = &gl.current.value;
     // popq %rcx
@@ -869,7 +861,6 @@ public:
   }
 
   void emit_i32_clz() {
-    auto icount = fixed_size_instr(has_tzcnt() ? 6 : 18);
     if (!has_tzcnt()) {
       // pop %rax
       emit_bytes(0x58);
@@ -896,7 +887,6 @@ public:
   }
 
   void emit_i32_ctz() {
-    auto icount = fixed_size_instr(has_tzcnt() ? 6 : 13);
     if (!has_tzcnt()) {
       // pop %rax
       emit_bytes(0x58);
@@ -919,7 +909,6 @@ public:
   }
 
   void emit_i32_popcnt() {
-    auto icount = fixed_size_instr(6);
     // popq %rax
     emit_bytes(0x58);
     // popcntl %eax, %eax
@@ -931,28 +920,22 @@ public:
   // --------------- i32 binops ----------------------
 
   void emit_i32_add() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0x01, 0xc8, 0x50);
   }
   void emit_i32_sub() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0x29, 0xc8, 0x50);
   }
   void emit_i32_mul() {
-    auto icount = fixed_size_instr(6);
     emit_i32_binop(0x0f, 0xaf, 0xc1, 0x50);
   }
   // cdq; idiv %ecx; pushq %rax
   void emit_i32_div_s() {
-    auto icount = fixed_size_instr(6);
     emit_i32_binop(0x99, 0xf7, 0xf9, 0x50);
   }
   void emit_i32_div_u() {
-    auto icount = fixed_size_instr(7);
     emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x50);
   }
   void emit_i32_rem_s() {
-    auto icount = fixed_size_instr(22);
     // pop %rcx
     emit_bytes(0x59);
     // pop %rax
@@ -979,46 +962,36 @@ public:
     emit_bytes(0x52);
   }
   void emit_i32_rem_u() {
-    auto icount = fixed_size_instr(7);
     emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x52);
   }
   void emit_i32_and() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0x21, 0xc8, 0x50);
   }
   void emit_i32_or() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0x09, 0xc8, 0x50);
   }
   void emit_i32_xor() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0x31, 0xc8, 0x50);
   }
   void emit_i32_shl() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0xd3, 0xe0, 0x50);
   }
   void emit_i32_shr_s() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0xd3, 0xf8, 0x50);
   }
   void emit_i32_shr_u() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0xd3, 0xe8, 0x50);
   }
   void emit_i32_rotl() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0xd3, 0xc0, 0x50);
   }
   void emit_i32_rotr() {
-    auto icount = fixed_size_instr(5);
     emit_i32_binop(0xd3, 0xc8, 0x50);
   }
 
   // --------------- i64 unops ----------------------
 
   void emit_i64_clz() {
-    auto icount = fixed_size_instr(has_tzcnt() ? 7 : 24);
     if (!has_tzcnt()) {
       // pop %rax
       emit_bytes(0x58);
@@ -1045,7 +1018,6 @@ public:
   }
 
   void emit_i64_ctz() {
-    auto icount = fixed_size_instr(has_tzcnt() ? 7 : 17);
     if (!has_tzcnt()) {
       // pop %rax
       emit_bytes(0x58);
@@ -1068,7 +1040,6 @@ public:
   }
 
   void emit_i64_popcnt() {
-    auto icount = fixed_size_instr(7);
     // popq %rax
     emit_bytes(0x58);
     // popcntq %rax, %rax
@@ -1080,28 +1051,22 @@ public:
   // --------------- i64 binops ----------------------
 
   void emit_i64_add() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0x01, 0xc8, 0x50);
   }
   void emit_i64_sub() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0x29, 0xc8, 0x50);
   }
   void emit_i64_mul() {
-    auto icount = fixed_size_instr(7);
     emit_i64_binop(0x48, 0x0f, 0xaf, 0xc1, 0x50);
   }
   // cdq; idiv %rcx; pushq %rax
   void emit_i64_div_s() {
-    auto icount = fixed_size_instr(8);
     emit_i64_binop(0x48, 0x99, 0x48, 0xf7, 0xf9, 0x50);
   }
   void emit_i64_div_u() {
-    auto icount = fixed_size_instr(9);
     emit_i64_binop(0x48, 0x31, 0xd2, 0x48, 0xf7, 0xf1, 0x50);
   }
   void emit_i64_rem_s() {
-    auto icount = fixed_size_instr(25);
     // pop %rcx
     emit_bytes(0x59);
     // pop %rax
@@ -1128,46 +1093,36 @@ public:
     emit_bytes(0x52);
   }
   void emit_i64_rem_u() {
-    auto icount = fixed_size_instr(9);
     emit_i64_binop(0x48, 0x31, 0xd2, 0x48, 0xf7, 0xf1, 0x52);
   }
   void emit_i64_and() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0x21, 0xc8, 0x50);
   }
   void emit_i64_or() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0x09, 0xc8, 0x50);
   }
   void emit_i64_xor() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0x31, 0xc8, 0x50);
   }
   void emit_i64_shl() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0xd3, 0xe0, 0x50);
   }
   void emit_i64_shr_s() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0xd3, 0xf8, 0x50);
   }
   void emit_i64_shr_u() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0xd3, 0xe8, 0x50);
   }
   void emit_i64_rotl() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0xd3, 0xc0, 0x50);
   }
   void emit_i64_rotr() {
-    auto icount = fixed_size_instr(6);
     emit_i64_binop(0x48, 0xd3, 0xc8, 0x50);
   }
 
   // --------------- f32 unops ----------------------
 
   void emit_f32_abs() {
-    auto icount = fixed_size_instr(7);
     // popq %rax;
     emit_bytes(0x58);
     // andl 0x7fffffff, %eax
@@ -1178,7 +1133,6 @@ public:
   }
 
   void emit_f32_neg() {
-    auto icount = fixed_size_instr(7);
     // popq %rax
     emit_bytes(0x58);
     // xorl 0x80000000, %eax
@@ -1287,7 +1241,6 @@ public:
   }
 
   void emit_f32_copysign() {
-    auto icount = fixed_size_instr(16);
     // popq %rax;
     emit_bytes(0x58);
     // andl 0x80000000, %eax
@@ -1429,7 +1382,6 @@ public:
   }
 
   void emit_f64_copysign() {
-    auto icount = fixed_size_instr(25);
     // popq %rcx;
     emit_bytes(0x59);
     // movabsq 0x8000000000000000, %rax
