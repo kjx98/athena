@@ -7,7 +7,6 @@
 #include <eosio/vm/utils.hpp>
 
 #include <cassert>
-#include <cpuid.h>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -105,8 +104,6 @@ public:
                      uint32_t funcnum) {
     _ft = &_mod.types[_mod.functions[funcnum]];
     // FIXME: This is not a tight upper bound
-    // const std::size_t instruction_size_ratio_upper_bound =
-    // use_softfloat?49:79;
     const std::size_t instruction_size_ratio_upper_bound = 79;
     std::size_t code_size =
         max_prologue_size +
@@ -172,7 +169,10 @@ public:
     assert((char *)code <= (char *)epilogue_start + max_epilogue_size);
   }
 
-  void emit_unreachable() { emit_error_handler(&on_unreachable); }
+  void emit_unreachable() {
+    auto icount = fixed_size_instr(16);
+    emit_error_handler(&on_unreachable);
+  }
   void emit_nop() {}
   void *emit_end() { return code; }
   void *emit_return(uint32_t depth_change) {
@@ -182,6 +182,7 @@ public:
   void emit_block() {}
   void *emit_loop() { return code; }
   void *emit_if() {
+    auto icount = fixed_size_instr(9);
     // pop RAX
     emit_bytes(0x58);
     // test EAX, EAX
@@ -191,6 +192,7 @@ public:
     return emit_branch_target32();
   }
   void *emit_else(void *if_loc) {
+    auto icount = fixed_size_instr(5);
     void *result = emit_br(0);
     fix_branch(if_loc, code);
     return result;
@@ -372,6 +374,7 @@ public:
   }
 
   void emit_select() {
+    auto icount = fixed_size_instr(13);
     // popq RAX
     emit_bytes(0x58);
     // popq RCX
@@ -385,6 +388,7 @@ public:
   }
 
   void emit_get_local(uint32_t local_idx) {
+    auto icount = fixed_size_instr(8);
     // stack layout:
     //   param0    <----- %rbp + 8*(nparams + 1)
     //   param1
@@ -413,6 +417,7 @@ public:
   }
 
   void emit_set_local(uint32_t local_idx) {
+    auto icount = fixed_size_instr(8);
     if (local_idx < _ft->param_types.size()) {
       // pop RAX
       emit_bytes(0x58);
@@ -429,6 +434,7 @@ public:
   }
 
   void emit_tee_local(uint32_t local_idx) {
+    auto icount = fixed_size_instr(9);
     if (local_idx < _ft->param_types.size()) {
       // pop RAX
       emit_bytes(0x58);
@@ -476,6 +482,7 @@ public:
     }
   }
   void emit_set_global(uint32_t globalidx) {
+    auto icount = fixed_size_instr(14);
     auto &gl = _mod.globals[globalidx];
     void *ptr = &gl.current.value;
     // popq %rcx
@@ -584,41 +591,49 @@ public:
   }
 
   void emit_f32_store(uint32_t /*alignment*/, uint32_t offset) {
+    auto icount = variable_size_instr(7, 15);
     // movl ECX, (RAX)
     emit_store_impl(offset, 0x89, 0x08);
   }
 
   void emit_f64_store(uint32_t /*alignment*/, uint32_t offset) {
+    auto icount = variable_size_instr(8, 16);
     // movl ECX, (RAX)
     emit_store_impl(offset, 0x48, 0x89, 0x08);
   }
 
   void emit_i32_store8(uint32_t /*alignment*/, uint32_t offset) {
+    auto icount = variable_size_instr(7, 15);
     // movb CL, (RAX)
     emit_store_impl(offset, 0x88, 0x08);
   }
 
   void emit_i32_store16(uint32_t /*alignment*/, uint32_t offset) {
+    auto icount = variable_size_instr(8, 16);
     // movb CX, (RAX)
     emit_store_impl(offset, 0x66, 0x89, 0x08);
   }
 
   void emit_i64_store8(uint32_t /*alignment*/, uint32_t offset) {
+    auto icount = variable_size_instr(7, 15);
     // movb CL, (RAX)
     emit_store_impl(offset, 0x88, 0x08);
   }
 
   void emit_i64_store16(uint32_t /*alignment*/, uint32_t offset) {
+    auto icount = variable_size_instr(8, 16);
     // movb CX, (RAX)
     emit_store_impl(offset, 0x66, 0x89, 0x08);
   }
 
   void emit_i64_store32(uint32_t /*alignment*/, uint32_t offset) {
+    auto icount = variable_size_instr(7, 15);
     // movl ECX, (RAX)
     emit_store_impl(offset, 0x89, 0x08);
   }
 
   void emit_current_memory() {
+    auto icount = fixed_size_instr(17);
     // pushq %rdi
     emit_bytes(0x57);
     // pushq %rsi
@@ -636,6 +651,7 @@ public:
     emit_bytes(0x50);
   }
   void emit_grow_memory() {
+    auto icount = fixed_size_instr(21);
     // popq %rax
     emit_bytes(0x58);
     // pushq %rdi
@@ -658,6 +674,7 @@ public:
   }
 
   void emit_i32_const(uint32_t value) {
+    auto icount = fixed_size_instr(6);
     // mov $value, %eax
     emit_bytes(0xb8);
     emit_operand32(value);
@@ -666,6 +683,7 @@ public:
   }
 
   void emit_i64_const(uint64_t value) {
+    auto icount = fixed_size_instr(11);
     // movabsq $value, %rax
     emit_bytes(0x48, 0xb8);
     emit_operand64(value);
@@ -674,6 +692,7 @@ public:
   }
 
   void emit_f32_const(float value) {
+    auto icount = fixed_size_instr(6);
     // mov $value, %eax
     emit_bytes(0xb8);
     emit_operandf32(value);
@@ -681,6 +700,7 @@ public:
     emit_bytes(0x50);
   }
   void emit_f64_const(double value) {
+    auto icount = fixed_size_instr(11);
     // movabsq $value, %rax
     emit_bytes(0x48, 0xb8);
     emit_operandf64(value);
@@ -689,6 +709,7 @@ public:
   }
 
   void emit_i32_eqz() {
+    auto icount = fixed_size_instr(10);
     // pop %rax
     emit_bytes(0x58);
     // xor %rcx, %rcx
@@ -703,56 +724,67 @@ public:
 
   // i32 relops
   void emit_i32_eq() {
+    auto icount = fixed_size_instr(11);
     // sete %dl
     emit_i32_relop(0x94);
   }
 
   void emit_i32_ne() {
+    auto icount = fixed_size_instr(11);
     // sete %dl
     emit_i32_relop(0x95);
   }
 
   void emit_i32_lt_s() {
+    auto icount = fixed_size_instr(11);
     // setl %dl
     emit_i32_relop(0x9c);
   }
 
   void emit_i32_lt_u() {
+    auto icount = fixed_size_instr(11);
     // setl %dl
     emit_i32_relop(0x92);
   }
 
   void emit_i32_gt_s() {
+    auto icount = fixed_size_instr(11);
     // setg %dl
     emit_i32_relop(0x9f);
   }
 
   void emit_i32_gt_u() {
+    auto icount = fixed_size_instr(11);
     // seta %dl
     emit_i32_relop(0x97);
   }
 
   void emit_i32_le_s() {
+    auto icount = fixed_size_instr(11);
     // setle %dl
     emit_i32_relop(0x9e);
   }
 
   void emit_i32_le_u() {
+    auto icount = fixed_size_instr(11);
     // setbe %dl
     emit_i32_relop(0x96);
   }
 
   void emit_i32_ge_s() {
+    auto icount = fixed_size_instr(11);
     // setge %dl
     emit_i32_relop(0x9d);
   }
 
   void emit_i32_ge_u() {
+    auto icount = fixed_size_instr(11);
     // setae %dl
     emit_i32_relop(0x93);
   }
 
   void emit_i64_eqz() {
+    auto icount = fixed_size_instr(11);
     // pop %rax
     emit_bytes(0x58);
     // xor %rcx, %rcx
@@ -766,147 +798,156 @@ public:
   }
   // i64 relops
   void emit_i64_eq() {
+    auto icount = fixed_size_instr(12);
     // sete %dl
     emit_i64_relop(0x94);
   }
 
   void emit_i64_ne() {
+    auto icount = fixed_size_instr(12);
     // sete %dl
     emit_i64_relop(0x95);
   }
 
   void emit_i64_lt_s() {
+    auto icount = fixed_size_instr(12);
     // setl %dl
     emit_i64_relop(0x9c);
   }
 
   void emit_i64_lt_u() {
+    auto icount = fixed_size_instr(12);
     // setl %dl
     emit_i64_relop(0x92);
   }
 
   void emit_i64_gt_s() {
+    auto icount = fixed_size_instr(12);
     // setg %dl
     emit_i64_relop(0x9f);
   }
 
   void emit_i64_gt_u() {
+    auto icount = fixed_size_instr(12);
     // seta %dl
     emit_i64_relop(0x97);
   }
 
   void emit_i64_le_s() {
+    auto icount = fixed_size_instr(12);
     // setle %dl
     emit_i64_relop(0x9e);
   }
 
   void emit_i64_le_u() {
+    auto icount = fixed_size_instr(12);
     // setbe %dl
     emit_i64_relop(0x96);
   }
 
   void emit_i64_ge_s() {
+    auto icount = fixed_size_instr(12);
     // setge %dl
     emit_i64_relop(0x9d);
   }
 
   void emit_i64_ge_u() {
+    auto icount = fixed_size_instr(12);
     // setae %dl
     emit_i64_relop(0x93);
   }
 
   using float32_t = float;
   using float64_t = double;
-  //   #define CHOOSE_FN(name) nullptr
+#define CHOOSE_FN(name) nullptr
 
   // --------------- f32 relops ----------------------
-  void emit_f32_eq() { emit_f32_relop(0x00, false, false); }
+  void emit_f32_eq() {
+    auto icount = softfloat_instr(25, 45);
+    emit_f32_relop(0x00, CHOOSE_FN(_eosio_f32_eq), false, false);
+  }
 
-  void emit_f32_ne() { emit_f32_relop(0x00, false, true); }
+  void emit_f32_ne() {
+    auto icount = softfloat_instr(24, 47);
+    emit_f32_relop(0x00, CHOOSE_FN(_eosio_f32_eq), false, true);
+  }
 
-  void emit_f32_lt() { emit_f32_relop(0x01, false, false); }
+  void emit_f32_lt() {
+    auto icount = softfloat_instr(25, 45);
+    emit_f32_relop(0x01, CHOOSE_FN(_eosio_f32_lt), false, false);
+  }
 
-  void emit_f32_gt() { emit_f32_relop(0x01, true, false); }
+  void emit_f32_gt() {
+    auto icount = softfloat_instr(25, 45);
+    emit_f32_relop(0x01, CHOOSE_FN(_eosio_f32_lt), true, false);
+  }
 
-  void emit_f32_le() { emit_f32_relop(0x02, false, false); }
+  void emit_f32_le() {
+    auto icount = softfloat_instr(25, 45);
+    emit_f32_relop(0x02, CHOOSE_FN(_eosio_f32_le), false, false);
+  }
 
-  void emit_f32_ge() { emit_f32_relop(0x02, true, false); }
+  void emit_f32_ge() {
+    auto icount = softfloat_instr(25, 45);
+    emit_f32_relop(0x02, CHOOSE_FN(_eosio_f32_le), true, false);
+  }
 
   // --------------- f64 relops ----------------------
-  void emit_f64_eq() { emit_f64_relop(0x00, false, false); }
+  void emit_f64_eq() {
+    auto icount = softfloat_instr(25, 47);
+    emit_f64_relop(0x00, CHOOSE_FN(_eosio_f64_eq), false, false);
+  }
 
-  void emit_f64_ne() { emit_f64_relop(0x00, false, true); }
+  void emit_f64_ne() {
+    auto icount = softfloat_instr(24, 49);
+    emit_f64_relop(0x00, CHOOSE_FN(_eosio_f64_eq), false, true);
+  }
 
-  void emit_f64_lt() { emit_f64_relop(0x01, false, false); }
+  void emit_f64_lt() {
+    auto icount = softfloat_instr(25, 47);
+    emit_f64_relop(0x01, CHOOSE_FN(_eosio_f64_lt), false, false);
+  }
 
-  void emit_f64_gt() { emit_f64_relop(0x01, true, false); }
+  void emit_f64_gt() {
+    auto icount = softfloat_instr(25, 47);
+    emit_f64_relop(0x01, CHOOSE_FN(_eosio_f64_lt), true, false);
+  }
 
-  void emit_f64_le() { emit_f64_relop(0x02, false, false); }
+  void emit_f64_le() {
+    auto icount = softfloat_instr(25, 47);
+    emit_f64_relop(0x02, CHOOSE_FN(_eosio_f64_le), false, false);
+  }
 
-  void emit_f64_ge() { emit_f64_relop(0x02, true, false); }
+  void emit_f64_ge() {
+    auto icount = softfloat_instr(25, 47);
+    emit_f64_relop(0x02, CHOOSE_FN(_eosio_f64_le), true, false);
+  }
 
   // --------------- i32 unops ----------------------
 
-  bool has_tzcnt_impl() {
-    unsigned a, b, c, d;
-    return __get_cpuid_count(7, 0, &a, &b, &c, &d) && (b & bit_BMI) &&
-           __get_cpuid(0x80000001, &a, &b, &c, &d) && (c & bit_LZCNT);
-  }
-
-  bool has_tzcnt() {
-    static bool result = has_tzcnt_impl();
-    return result;
-  }
-
+  // FIXME: detect whether lzcnt/tzcnt are supported
   void emit_i32_clz() {
-    if (!has_tzcnt()) {
-      // pop %rax
-      emit_bytes(0x58);
-      // mov $-1, %ecx
-      emit_bytes(0xb9, 0xff, 0xff, 0xff, 0xff);
-      // bsr %eax, %eax
-      emit_bytes(0x0f, 0xbd, 0xc0);
-      // cmovz %ecx, %eax
-      emit_bytes(0x0f, 0x44, 0xc1);
-      // sub $31, %eax
-      emit_bytes(0x83, 0xe8, 0x1f);
-      // neg %eax
-      emit_bytes(0xf7, 0xd8);
-      // push %rax
-      emit_bytes(0x50);
-    } else {
-      // popq %rax
-      emit_bytes(0x58);
-      // lzcntl %eax, %eax
-      emit_bytes(0xf3, 0x0f, 0xbd, 0xc0);
-      // pushq %rax
-      emit_bytes(0x50);
-    }
+    auto icount = fixed_size_instr(6);
+    // popq %rax
+    emit_bytes(0x58);
+    // lzcntl %eax, %eax
+    emit_bytes(0xf3, 0x0f, 0xbd, 0xc0);
+    // pushq %rax
+    emit_bytes(0x50);
   }
 
   void emit_i32_ctz() {
-    if (!has_tzcnt()) {
-      // pop %rax
-      emit_bytes(0x58);
-      // mov $32, %ecx
-      emit_bytes(0xb9, 0x20, 0x00, 0x00, 0x00);
-      // bsf %eax, %eax
-      emit_bytes(0x0f, 0xbc, 0xc0);
-      // cmovz %ecx, %eax
-      emit_bytes(0x0f, 0x44, 0xc1);
-      // push %rax
-      emit_bytes(0x50);
-    } else {
-      // popq %rax
-      emit_bytes(0x58);
-      // tzcntl %eax, %eax
-      emit_bytes(0xf3, 0x0f, 0xbc, 0xc0);
-      // pushq %rax
-      emit_bytes(0x50);
-    }
+    auto icount = fixed_size_instr(6);
+    // popq %rax
+    emit_bytes(0x58);
+    // tzcntl %eax, %eax
+    emit_bytes(0xf3, 0x0f, 0xbc, 0xc0);
+    // pushq %rax
+    emit_bytes(0x50);
   }
 
   void emit_i32_popcnt() {
+    auto icount = fixed_size_instr(6);
     // popq %rax
     emit_bytes(0x58);
     // popcntl %eax, %eax
@@ -917,13 +958,29 @@ public:
 
   // --------------- i32 binops ----------------------
 
-  void emit_i32_add() { emit_i32_binop(0x01, 0xc8, 0x50); }
-  void emit_i32_sub() { emit_i32_binop(0x29, 0xc8, 0x50); }
-  void emit_i32_mul() { emit_i32_binop(0x0f, 0xaf, 0xc1, 0x50); }
+  void emit_i32_add() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0x01, 0xc8, 0x50);
+  }
+  void emit_i32_sub() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0x29, 0xc8, 0x50);
+  }
+  void emit_i32_mul() {
+    auto icount = fixed_size_instr(6);
+    emit_i32_binop(0x0f, 0xaf, 0xc1, 0x50);
+  }
   // cdq; idiv %ecx; pushq %rax
-  void emit_i32_div_s() { emit_i32_binop(0x99, 0xf7, 0xf9, 0x50); }
-  void emit_i32_div_u() { emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x50); }
+  void emit_i32_div_s() {
+    auto icount = fixed_size_instr(6);
+    emit_i32_binop(0x99, 0xf7, 0xf9, 0x50);
+  }
+  void emit_i32_div_u() {
+    auto icount = fixed_size_instr(7);
+    emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x50);
+  }
   void emit_i32_rem_s() {
+    auto icount = fixed_size_instr(22);
     // pop %rcx
     emit_bytes(0x59);
     // pop %rax
@@ -949,67 +1006,68 @@ public:
     // push %rdx
     emit_bytes(0x52);
   }
-  void emit_i32_rem_u() { emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x52); }
-  void emit_i32_and() { emit_i32_binop(0x21, 0xc8, 0x50); }
-  void emit_i32_or() { emit_i32_binop(0x09, 0xc8, 0x50); }
-  void emit_i32_xor() { emit_i32_binop(0x31, 0xc8, 0x50); }
-  void emit_i32_shl() { emit_i32_binop(0xd3, 0xe0, 0x50); }
-  void emit_i32_shr_s() { emit_i32_binop(0xd3, 0xf8, 0x50); }
-  void emit_i32_shr_u() { emit_i32_binop(0xd3, 0xe8, 0x50); }
-  void emit_i32_rotl() { emit_i32_binop(0xd3, 0xc0, 0x50); }
-  void emit_i32_rotr() { emit_i32_binop(0xd3, 0xc8, 0x50); }
+  void emit_i32_rem_u() {
+    auto icount = fixed_size_instr(7);
+    emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x52);
+  }
+  void emit_i32_and() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0x21, 0xc8, 0x50);
+  }
+  void emit_i32_or() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0x09, 0xc8, 0x50);
+  }
+  void emit_i32_xor() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0x31, 0xc8, 0x50);
+  }
+  void emit_i32_shl() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0xd3, 0xe0, 0x50);
+  }
+  void emit_i32_shr_s() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0xd3, 0xf8, 0x50);
+  }
+  void emit_i32_shr_u() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0xd3, 0xe8, 0x50);
+  }
+  void emit_i32_rotl() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0xd3, 0xc0, 0x50);
+  }
+  void emit_i32_rotr() {
+    auto icount = fixed_size_instr(5);
+    emit_i32_binop(0xd3, 0xc8, 0x50);
+  }
 
   // --------------- i64 unops ----------------------
 
+  // FIXME: detect whether lzcnt/tzcnt are supported
   void emit_i64_clz() {
-    if (!has_tzcnt()) {
-      // pop %rax
-      emit_bytes(0x58);
-      // mov $-1, %ecx
-      emit_bytes(0x48, 0xc7, 0xc1, 0xff, 0xff, 0xff, 0xff);
-      // bsr %eax, %eax
-      emit_bytes(0x48, 0x0f, 0xbd, 0xc0);
-      // cmovz %ecx, %eax
-      emit_bytes(0x48, 0x0f, 0x44, 0xc1);
-      // sub $63, %eax
-      emit_bytes(0x48, 0x83, 0xe8, 0x3f);
-      // neg %eax
-      emit_bytes(0x48, 0xf7, 0xd8);
-      // push %rax
-      emit_bytes(0x50);
-    } else {
-      // popq %rax
-      emit_bytes(0x58);
-      // lzcntq %eax, %eax
-      emit_bytes(0xf3, 0x48, 0x0f, 0xbd, 0xc0);
-      // pushq %rax
-      emit_bytes(0x50);
-    }
+    auto icount = fixed_size_instr(7);
+    // popq %rax
+    emit_bytes(0x58);
+    // lzcntq %eax, %eax
+    emit_bytes(0xf3, 0x48, 0x0f, 0xbd, 0xc0);
+    // pushq %rax
+    emit_bytes(0x50);
   }
 
   void emit_i64_ctz() {
-    if (!has_tzcnt()) {
-      // pop %rax
-      emit_bytes(0x58);
-      // mov $64, %ecx
-      emit_bytes(0x48, 0xc7, 0xc1, 0x40, 0x00, 0x00, 0x00);
-      // bsf %eax, %eax
-      emit_bytes(0x48, 0x0f, 0xbc, 0xc0);
-      // cmovz %ecx, %eax
-      emit_bytes(0x48, 0x0f, 0x44, 0xc1);
-      // push %rax
-      emit_bytes(0x50);
-    } else {
-      // popq %rax
-      emit_bytes(0x58);
-      // tzcntq %eax, %eax
-      emit_bytes(0xf3, 0x48, 0x0f, 0xbc, 0xc0);
-      // pushq %rax
-      emit_bytes(0x50);
-    }
+    auto icount = fixed_size_instr(7);
+    // popq %rax
+    emit_bytes(0x58);
+    // tzcntq %eax, %eax
+    emit_bytes(0xf3, 0x48, 0x0f, 0xbc, 0xc0);
+    // pushq %rax
+    emit_bytes(0x50);
   }
 
   void emit_i64_popcnt() {
+    auto icount = fixed_size_instr(7);
     // popq %rax
     emit_bytes(0x58);
     // popcntq %rax, %rax
@@ -1020,15 +1078,29 @@ public:
 
   // --------------- i64 binops ----------------------
 
-  void emit_i64_add() { emit_i64_binop(0x48, 0x01, 0xc8, 0x50); }
-  void emit_i64_sub() { emit_i64_binop(0x48, 0x29, 0xc8, 0x50); }
-  void emit_i64_mul() { emit_i64_binop(0x48, 0x0f, 0xaf, 0xc1, 0x50); }
+  void emit_i64_add() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0x01, 0xc8, 0x50);
+  }
+  void emit_i64_sub() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0x29, 0xc8, 0x50);
+  }
+  void emit_i64_mul() {
+    auto icount = fixed_size_instr(7);
+    emit_i64_binop(0x48, 0x0f, 0xaf, 0xc1, 0x50);
+  }
   // cdq; idiv %rcx; pushq %rax
-  void emit_i64_div_s() { emit_i64_binop(0x48, 0x99, 0x48, 0xf7, 0xf9, 0x50); }
+  void emit_i64_div_s() {
+    auto icount = fixed_size_instr(8);
+    emit_i64_binop(0x48, 0x99, 0x48, 0xf7, 0xf9, 0x50);
+  }
   void emit_i64_div_u() {
+    auto icount = fixed_size_instr(9);
     emit_i64_binop(0x48, 0x31, 0xd2, 0x48, 0xf7, 0xf1, 0x50);
   }
   void emit_i64_rem_s() {
+    auto icount = fixed_size_instr(25);
     // pop %rcx
     emit_bytes(0x59);
     // pop %rax
@@ -1055,20 +1127,46 @@ public:
     emit_bytes(0x52);
   }
   void emit_i64_rem_u() {
+    auto icount = fixed_size_instr(9);
     emit_i64_binop(0x48, 0x31, 0xd2, 0x48, 0xf7, 0xf1, 0x52);
   }
-  void emit_i64_and() { emit_i64_binop(0x48, 0x21, 0xc8, 0x50); }
-  void emit_i64_or() { emit_i64_binop(0x48, 0x09, 0xc8, 0x50); }
-  void emit_i64_xor() { emit_i64_binop(0x48, 0x31, 0xc8, 0x50); }
-  void emit_i64_shl() { emit_i64_binop(0x48, 0xd3, 0xe0, 0x50); }
-  void emit_i64_shr_s() { emit_i64_binop(0x48, 0xd3, 0xf8, 0x50); }
-  void emit_i64_shr_u() { emit_i64_binop(0x48, 0xd3, 0xe8, 0x50); }
-  void emit_i64_rotl() { emit_i64_binop(0x48, 0xd3, 0xc0, 0x50); }
-  void emit_i64_rotr() { emit_i64_binop(0x48, 0xd3, 0xc8, 0x50); }
+  void emit_i64_and() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0x21, 0xc8, 0x50);
+  }
+  void emit_i64_or() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0x09, 0xc8, 0x50);
+  }
+  void emit_i64_xor() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0x31, 0xc8, 0x50);
+  }
+  void emit_i64_shl() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0xd3, 0xe0, 0x50);
+  }
+  void emit_i64_shr_s() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0xd3, 0xf8, 0x50);
+  }
+  void emit_i64_shr_u() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0xd3, 0xe8, 0x50);
+  }
+  void emit_i64_rotl() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0xd3, 0xc0, 0x50);
+  }
+  void emit_i64_rotr() {
+    auto icount = fixed_size_instr(6);
+    emit_i64_binop(0x48, 0xd3, 0xc8, 0x50);
+  }
 
   // --------------- f32 unops ----------------------
 
   void emit_f32_abs() {
+    auto icount = fixed_size_instr(7);
     // popq %rax;
     emit_bytes(0x58);
     // andl 0x7fffffff, %eax
@@ -1079,6 +1177,7 @@ public:
   }
 
   void emit_f32_neg() {
+    auto icount = fixed_size_instr(7);
     // popq %rax
     emit_bytes(0x58);
     // xorl 0x80000000, %eax
@@ -1089,6 +1188,7 @@ public:
   }
 
   void emit_f32_ceil() {
+    auto icount = softfloat_instr(12, 36);
     // roundss 0b1010, (%rsp), %xmm0
     emit_bytes(0x66, 0x0f, 0x3a, 0x0a, 0x04, 0x24, 0x0a);
     // movss %xmm0, (%rsp)
@@ -1096,6 +1196,7 @@ public:
   }
 
   void emit_f32_floor() {
+    auto icount = softfloat_instr(12, 36);
     // roundss 0b1001, (%rsp), %xmm0
     emit_bytes(0x66, 0x0f, 0x3a, 0x0a, 0x04, 0x24, 0x09);
     // movss %xmm0, (%rsp)
@@ -1103,6 +1204,7 @@ public:
   }
 
   void emit_f32_trunc() {
+    auto icount = softfloat_instr(12, 36);
     // roundss 0b1011, (%rsp), %xmm0
     emit_bytes(0x66, 0x0f, 0x3a, 0x0a, 0x04, 0x24, 0x0b);
     // movss %xmm0, (%rsp)
@@ -1110,6 +1212,7 @@ public:
   }
 
   void emit_f32_nearest() {
+    auto icount = softfloat_instr(12, 36);
     // roundss 0b1000, (%rsp), %xmm0
     emit_bytes(0x66, 0x0f, 0x3a, 0x0a, 0x04, 0x24, 0x08);
     // movss %xmm0, (%rsp)
@@ -1117,6 +1220,7 @@ public:
   }
 
   void emit_f32_sqrt() {
+    auto icount = softfloat_instr(10, 36);
     // sqrtss (%rsp), %xmm0
     emit_bytes(0xf3, 0x0f, 0x51, 0x04, 0x24);
     // movss %xmm0, (%rsp)
@@ -1125,11 +1229,24 @@ public:
 
   // --------------- f32 binops ----------------------
 
-  void emit_f32_add() { emit_f32_binop(0x58); }
-  void emit_f32_sub() { emit_f32_binop(0x5c); }
-  void emit_f32_mul() { emit_f32_binop(0x59); }
-  void emit_f32_div() { emit_f32_binop(0x5e); }
+  void emit_f32_add() {
+    auto icount = softfloat_instr(21, 44);
+    emit_f32_binop(0x58, CHOOSE_FN(_eosio_f32_add));
+  }
+  void emit_f32_sub() {
+    auto icount = softfloat_instr(21, 44);
+    emit_f32_binop(0x5c, CHOOSE_FN(_eosio_f32_sub));
+  }
+  void emit_f32_mul() {
+    auto icount = softfloat_instr(21, 44);
+    emit_f32_binop(0x59, CHOOSE_FN(_eosio_f32_mul));
+  }
+  void emit_f32_div() {
+    auto icount = softfloat_instr(21, 44);
+    emit_f32_binop(0x5e, CHOOSE_FN(_eosio_f32_div));
+  }
   void emit_f32_min() {
+    auto icount = softfloat_instr(47, 44);
     // mov (%rsp), %eax
     emit_bytes(0x8b, 0x04, 0x24);
     // test %eax, %eax
@@ -1158,6 +1275,7 @@ public:
     emit_bytes(0xf3, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f32_max() {
+    auto icount = softfloat_instr(47, 44);
     // mov (%rsp), %eax
     emit_bytes(0x8b, 0x04, 0x24);
     // test %eax, %eax
@@ -1187,6 +1305,7 @@ public:
   }
 
   void emit_f32_copysign() {
+    auto icount = fixed_size_instr(16);
     // popq %rax;
     emit_bytes(0x58);
     // andl 0x80000000, %eax
@@ -1206,6 +1325,7 @@ public:
   // --------------- f64 unops ----------------------
 
   void emit_f64_abs() {
+    auto icount = fixed_size_instr(15);
     // popq %rcx;
     emit_bytes(0x59);
     // movabsq $0x7fffffffffffffff, %rax
@@ -1218,6 +1338,7 @@ public:
   }
 
   void emit_f64_neg() {
+    auto icount = fixed_size_instr(15);
     // popq %rcx;
     emit_bytes(0x59);
     // movabsq $0x8000000000000000, %rax
@@ -1230,6 +1351,7 @@ public:
   }
 
   void emit_f64_ceil() {
+    auto icount = softfloat_instr(12, 38);
     // roundsd 0b1010, (%rsp), %xmm0
     emit_bytes(0x66, 0x0f, 0x3a, 0x0b, 0x04, 0x24, 0x0a);
     // movsd %xmm0, (%rsp)
@@ -1237,6 +1359,7 @@ public:
   }
 
   void emit_f64_floor() {
+    auto icount = softfloat_instr(12, 38);
     // roundsd 0b1001, (%rsp), %xmm0
     emit_bytes(0x66, 0x0f, 0x3a, 0x0b, 0x04, 0x24, 0x09);
     // movss %xmm0, (%rsp)
@@ -1244,6 +1367,7 @@ public:
   }
 
   void emit_f64_trunc() {
+    auto icount = softfloat_instr(12, 38);
     // roundsd 0b1011, (%rsp), %xmm0
     emit_bytes(0x66, 0x0f, 0x3a, 0x0b, 0x04, 0x24, 0x0b);
     // movss %xmm0, (%rsp)
@@ -1251,6 +1375,7 @@ public:
   }
 
   void emit_f64_nearest() {
+    auto icount = softfloat_instr(12, 38);
     // roundsd 0b1000, (%rsp), %xmm0
     emit_bytes(0x66, 0x0f, 0x3a, 0x0b, 0x04, 0x24, 0x08);
     // movss %xmm0, (%rsp)
@@ -1258,6 +1383,7 @@ public:
   }
 
   void emit_f64_sqrt() {
+    auto icount = softfloat_instr(10, 38);
     // sqrtss (%rsp), %xmm0
     emit_bytes(0xf2, 0x0f, 0x51, 0x04, 0x24);
     // movss %xmm0, (%rsp)
@@ -1266,11 +1392,24 @@ public:
 
   // --------------- f64 binops ----------------------
 
-  void emit_f64_add() { emit_f64_binop(0x58); }
-  void emit_f64_sub() { emit_f64_binop(0x5c); }
-  void emit_f64_mul() { emit_f64_binop(0x59); }
-  void emit_f64_div() { emit_f64_binop(0x5e); }
+  void emit_f64_add() {
+    auto icount = softfloat_instr(21, 47);
+    emit_f64_binop(0x58, CHOOSE_FN(_eosio_f64_add));
+  }
+  void emit_f64_sub() {
+    auto icount = softfloat_instr(21, 47);
+    emit_f64_binop(0x5c, CHOOSE_FN(_eosio_f64_sub));
+  }
+  void emit_f64_mul() {
+    auto icount = softfloat_instr(21, 47);
+    emit_f64_binop(0x59, CHOOSE_FN(_eosio_f64_mul));
+  }
+  void emit_f64_div() {
+    auto icount = softfloat_instr(21, 47);
+    emit_f64_binop(0x5e, CHOOSE_FN(_eosio_f64_div));
+  }
   void emit_f64_min() {
+    auto icount = softfloat_instr(49, 47);
     // mov (%rsp), %rax
     emit_bytes(0x48, 0x8b, 0x04, 0x24);
     // test %rax, %rax
@@ -1299,6 +1438,7 @@ public:
     emit_bytes(0xf2, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f64_max() {
+    auto icount = softfloat_instr(49, 47);
     // mov (%rsp), %rax
     emit_bytes(0x48, 0x8b, 0x04, 0x24);
     // test %rax, %rax
@@ -1328,6 +1468,7 @@ public:
   }
 
   void emit_f64_copysign() {
+    auto icount = fixed_size_instr(25);
     // popq %rcx;
     emit_bytes(0x59);
     // movabsq 0x8000000000000000, %rax
@@ -1350,6 +1491,7 @@ public:
   // --------------- conversions --------------------
 
   void emit_i32_wrap_i64() {
+    auto icount = fixed_size_instr(6);
     // Zero out the high 4 bytes
     // xor %eax, %eax
     emit_bytes(0x31, 0xc0);
@@ -1358,6 +1500,7 @@ public:
   }
 
   void emit_i32_trunc_s_f32() {
+    auto icount = softfloat_instr(33, 36);
     // cvttss2si 8(%rsp), %eax
     emit_f2i(0xf3, 0x0f, 0x2c, 0x44, 0x24, 0x08);
     // mov %eax, (%rsp)
@@ -1365,6 +1508,7 @@ public:
   }
 
   void emit_i32_trunc_u_f32() {
+    auto icount = softfloat_instr(46, 36);
     // cvttss2si 8(%rsp), %rax
     emit_f2i(0xf3, 0x48, 0x0f, 0x2c, 0x44, 0x24, 0x08);
     // mov %eax, (%rsp)
@@ -1378,6 +1522,7 @@ public:
     fix_branch(emit_branch_target32(), fpe_handler);
   }
   void emit_i32_trunc_s_f64() {
+    auto icount = softfloat_instr(34, 38);
     // cvttsd2si 8(%rsp), %eax
     emit_f2i(0xf2, 0x0f, 0x2c, 0x44, 0x24, 0x08);
     // movq %rax, (%rsp)
@@ -1385,6 +1530,7 @@ public:
   }
 
   void emit_i32_trunc_u_f64() {
+    auto icount = softfloat_instr(47, 38);
     // cvttsd2si 8(%rsp), %rax
     emit_f2i(0xf2, 0x48, 0x0f, 0x2c, 0x44, 0x24, 0x08);
     // movq %rax, (%rsp)
@@ -1399,6 +1545,7 @@ public:
   }
 
   void emit_i64_extend_s_i32() {
+    auto icount = fixed_size_instr(8);
     // movslq (%rsp), %rax
     emit_bytes(0x48, 0x63, 0x04, 0x24);
     // mov %rax, (%rsp)
@@ -1409,12 +1556,14 @@ public:
   }
 
   void emit_i64_trunc_s_f32() {
+    auto icount = softfloat_instr(35, 37);
     // cvttss2si (%rsp), %rax
     emit_f2i(0xf3, 0x48, 0x0f, 0x2c, 0x44, 0x24, 0x08);
     // mov %rax, (%rsp)
     emit_bytes(0x48, 0x89, 0x04, 0x24);
   }
   void emit_i64_trunc_u_f32() {
+    auto icount = softfloat_instr(101, 37);
     // mov $0x5f000000, %eax
     emit_bytes(0xb8);
     emit_operand32(0x5f000000);
@@ -1454,12 +1603,14 @@ public:
     fix_branch(emit_branch_target32(), fpe_handler);
   }
   void emit_i64_trunc_s_f64() {
+    auto icount = softfloat_instr(35, 38);
     // cvttsd2si (%rsp), %rax
     emit_f2i(0xf2, 0x48, 0x0f, 0x2c, 0x44, 0x24, 0x08);
     // mov %rax, (%rsp)
     emit_bytes(0x48, 0x89, 0x04, 0x24);
   }
   void emit_i64_trunc_u_f64() {
+    auto icount = softfloat_instr(109, 38);
     // movabsq $0x43e0000000000000, %rax
     emit_bytes(0x48, 0xb8);
     emit_operand64(0x43e0000000000000);
@@ -1500,12 +1651,14 @@ public:
   }
 
   void emit_f32_convert_s_i32() {
+    auto icount = softfloat_instr(10, 36);
     // cvtsi2ssl (%rsp), %xmm0
     emit_bytes(0xf3, 0x0f, 0x2a, 0x04, 0x24);
     // movss %xmm0, (%rsp)
     emit_bytes(0xf3, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f32_convert_u_i32() {
+    auto icount = softfloat_instr(11, 36);
     // zero-extend to 64-bits
     // cvtsi2sslq (%rsp), %xmm0
     emit_bytes(0xf3, 0x48, 0x0f, 0x2a, 0x04, 0x24);
@@ -1513,12 +1666,14 @@ public:
     emit_bytes(0xf3, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f32_convert_s_i64() {
+    auto icount = softfloat_instr(11, 38);
     // cvtsi2sslq (%rsp), %xmm0
     emit_bytes(0xf3, 0x48, 0x0f, 0x2a, 0x04, 0x24);
     // movss %xmm0, (%rsp)
     emit_bytes(0xf3, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f32_convert_u_i64() {
+    auto icount = softfloat_instr(55, 38);
     // movq (%rsp), %rax
     emit_bytes(0x48, 0x8b, 0x04, 0x24);
     // testq %rax, %rax
@@ -1555,30 +1710,35 @@ public:
     emit_bytes(0xf3, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f32_demote_f64() {
+    auto icount = softfloat_instr(10, 38);
     // cvtsd2ss (%rsp), %xmm0
     emit_bytes(0xf2, 0x0f, 0x5a, 0x04, 0x24);
     // movss %xmm0, (%rsp)
     emit_bytes(0xf3, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f64_convert_s_i32() {
+    auto icount = softfloat_instr(10, 37);
     // cvtsi2sdl (%rsp), %xmm0
     emit_bytes(0xf2, 0x0f, 0x2a, 0x04, 0x24);
     // movsd %xmm0, (%rsp)
     emit_bytes(0xf2, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f64_convert_u_i32() {
+    auto icount = softfloat_instr(11, 37);
     //  cvtsi2sdq (%rsp), %xmm0
     emit_bytes(0xf2, 0x48, 0x0f, 0x2a, 0x04, 0x24);
     // movsd %xmm0, (%rsp)
     emit_bytes(0xf2, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f64_convert_s_i64() {
+    auto icount = softfloat_instr(11, 38);
     //  cvtsi2sdq (%rsp), %xmm0
     emit_bytes(0xf2, 0x48, 0x0f, 0x2a, 0x04, 0x24);
     // movsd %xmm0, (%rsp)
     emit_bytes(0xf2, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f64_convert_u_i64() {
+    auto icount = softfloat_instr(49, 38);
     // movq (%rsp), %rax
     emit_bytes(0x48, 0x8b, 0x04, 0x24);
     // testq %rax, %rax
@@ -1611,6 +1771,7 @@ public:
     emit_bytes(0xf2, 0x0f, 0x11, 0x04, 0x24);
   }
   void emit_f64_promote_f32() {
+    auto icount = softfloat_instr(10, 37);
     // cvtss2sd (%rsp), %xmm0
     emit_bytes(0xf3, 0x0f, 0x5a, 0x04, 0x24);
     // movsd %xmm0, (%rsp)
@@ -1626,7 +1787,7 @@ public:
   void emit_f64_reinterpret_i64() { /* Nothing to do */
   }
 
-  //#undef CHOOSE_FN
+#undef CHOOSE_FN
 
   void emit_error() { unimplemented(); }
 
@@ -1669,6 +1830,9 @@ private:
 #endif
       ignore_unused_variable_warning(code, min_code, max_code);
     }};
+  }
+  auto softfloat_instr(std::size_t hard_expected, std::size_t soft_expected) {
+    return fixed_size_instr(hard_expected);
   }
 
   module &_mod;
@@ -1803,7 +1967,7 @@ private:
     ;
   }
 
-  void emit_i32_relop(uint8_t opcod) {
+  void emit_i32_relop(uint8_t opcode) {
     // popq %rax
     emit_bytes(0x58);
     // popq %rcx
@@ -1813,12 +1977,12 @@ private:
     // cmpl %eax, %ecx
     emit_bytes(0x39, 0xc1);
     // SETcc %dl
-    emit_bytes(0x0f, opcod, 0xc2);
+    emit_bytes(0x0f, opcode, 0xc2);
     // pushq %rdx
     emit_bytes(0x52);
   }
 
-  template <class... T> void emit_i64_relop(uint8_t opcod) {
+  template <class... T> void emit_i64_relop(uint8_t opcode) {
     // popq %rax
     emit_bytes(0x58);
     // popq %rcx
@@ -1828,69 +1992,69 @@ private:
     // cmpq %rax, %rcx
     emit_bytes(0x48, 0x39, 0xc1);
     // SETcc %dl
-    emit_bytes(0x0f, opcod, 0xc2);
+    emit_bytes(0x0f, opcode, 0xc2);
     // pushq %rdx
     emit_bytes(0x52);
   }
 
-  void emit_f32_relop(uint8_t opcod, bool switch_params, bool flip_result) {
-    {
-      // ucomiss+seta/setae is shorter but can't handle eq/ne
-      if (switch_params) {
-        // movss (%rsp), %xmm0
-        emit_bytes(0xf3, 0x0f, 0x10, 0x04, 0x24);
-        // cmpCCss 8(%rsp), %xmm0
-        emit_bytes(0xf3, 0x0f, 0xc2, 0x44, 0x24, 0x08, opcod);
-      } else {
-        // movss 8(%rsp), %xmm0
-        emit_bytes(0xf3, 0x0f, 0x10, 0x44, 0x24, 0x08);
-        // cmpCCss (%rsp), %xmm0
-        emit_bytes(0xf3, 0x0f, 0xc2, 0x04, 0x24, opcod);
-      }
-      // movd %xmm0, %eax
-      emit_bytes(0x66, 0x0f, 0x7e, 0xc0);
-      if (!flip_result) {
-        // andl $1, %eax
-        emit_bytes(0x83, 0xe0, 0x01);
-      } else {
-        // incl %eax {0xffffffff, 0} -> {0, 1}
-        emit_bytes(0xff, 0xc0);
-      }
-      // leaq 16(%rsp), %rsp
-      emit_bytes(0x48, 0x8d, 0x64, 0x24, 0x10);
-      // pushq %rax
-      emit_bytes(0x50);
+  void emit_f32_relop(uint8_t opcode,
+                      uint64_t (*softfloatfun)(float32_t, float32_t),
+                      bool switch_params, bool flip_result) {
+    // ucomiss+seta/setae is shorter but can't handle eq/ne
+    if (switch_params) {
+      // movss (%rsp), %xmm0
+      emit_bytes(0xf3, 0x0f, 0x10, 0x04, 0x24);
+      // cmpCCss 8(%rsp), %xmm0
+      emit_bytes(0xf3, 0x0f, 0xc2, 0x44, 0x24, 0x08, opcode);
+    } else {
+      // movss 8(%rsp), %xmm0
+      emit_bytes(0xf3, 0x0f, 0x10, 0x44, 0x24, 0x08);
+      // cmpCCss (%rsp), %xmm0
+      emit_bytes(0xf3, 0x0f, 0xc2, 0x04, 0x24, opcode);
     }
+    // movd %xmm0, %eax
+    emit_bytes(0x66, 0x0f, 0x7e, 0xc0);
+    if (!flip_result) {
+      // andl $1, %eax
+      emit_bytes(0x83, 0xe0, 0x01);
+    } else {
+      // incl %eax {0xffffffff, 0} -> {0, 1}
+      emit_bytes(0xff, 0xc0);
+    }
+    // leaq 16(%rsp), %rsp
+    emit_bytes(0x48, 0x8d, 0x64, 0x24, 0x10);
+    // pushq %rax
+    emit_bytes(0x50);
   }
 
-  void emit_f64_relop(uint8_t opcod, bool switch_params, bool flip_result) {
-    {
-      // ucomisd+seta/setae is shorter but can't handle eq/ne
-      if (switch_params) {
-        // movsd (%rsp), %xmm0
-        emit_bytes(0xf2, 0x0f, 0x10, 0x04, 0x24);
-        // cmpCCsd 8(%rsp), %xmm0
-        emit_bytes(0xf2, 0x0f, 0xc2, 0x44, 0x24, 0x08, opcod);
-      } else {
-        // movsd 8(%rsp), %xmm0
-        emit_bytes(0xf2, 0x0f, 0x10, 0x44, 0x24, 0x08);
-        // cmpCCsd (%rsp), %xmm0
-        emit_bytes(0xf2, 0x0f, 0xc2, 0x04, 0x24, opcod);
-      }
-      // movd %xmm0, %eax
-      emit_bytes(0x66, 0x0f, 0x7e, 0xc0);
-      if (!flip_result) {
-        // andl $1, eax
-        emit_bytes(0x83, 0xe0, 0x01);
-      } else {
-        // incl %eax {0xffffffff, 0} -> {0, 1}
-        emit_bytes(0xff, 0xc0);
-      }
-      // leaq 16(%rsp), %rsp
-      emit_bytes(0x48, 0x8d, 0x64, 0x24, 0x10);
-      // pushq %rax
-      emit_bytes(0x50);
+  void emit_f64_relop(uint8_t opcode,
+                      uint64_t (*softfloatfun)(float64_t, float64_t),
+                      bool switch_params, bool flip_result) {
+    // ucomisd+seta/setae is shorter but can't handle eq/ne
+    if (switch_params) {
+      // movsd (%rsp), %xmm0
+      emit_bytes(0xf2, 0x0f, 0x10, 0x04, 0x24);
+      // cmpCCsd 8(%rsp), %xmm0
+      emit_bytes(0xf2, 0x0f, 0xc2, 0x44, 0x24, 0x08, opcode);
+    } else {
+      // movsd 8(%rsp), %xmm0
+      emit_bytes(0xf2, 0x0f, 0x10, 0x44, 0x24, 0x08);
+      // cmpCCsd (%rsp), %xmm0
+      emit_bytes(0xf2, 0x0f, 0xc2, 0x04, 0x24, opcode);
     }
+    // movd %xmm0, %eax
+    emit_bytes(0x66, 0x0f, 0x7e, 0xc0);
+    if (!flip_result) {
+      // andl $1, eax
+      emit_bytes(0x83, 0xe0, 0x01);
+    } else {
+      // incl %eax {0xffffffff, 0} -> {0, 1}
+      emit_bytes(0xff, 0xc0);
+    }
+    // leaq 16(%rsp), %rsp
+    emit_bytes(0x48, 0x8d, 0x64, 0x24, 0x10);
+    // pushq %rax
+    emit_bytes(0x50);
   }
 
   template <class... T> void emit_i32_binop(T... op) {
@@ -1913,7 +2077,8 @@ private:
     emit_bytes(static_cast<uint8_t>(op)...);
   }
 
-  void emit_f32_binop(uint8_t op) {
+  void emit_f32_binop(uint8_t op,
+                      float32_t (*softfloatfun)(float32_t, float32_t)) {
     // movss 8(%rsp), %xmm0
     emit_bytes(0xf3, 0x0f, 0x10, 0x44, 0x24, 0x08);
     // OPss (%rsp), %xmm0
@@ -1924,7 +2089,8 @@ private:
     emit_bytes(0xf3, 0x0f, 0x11, 0x04, 0x24);
   }
 
-  void emit_f64_binop(uint8_t op) {
+  void emit_f64_binop(uint8_t op,
+                      float64_t (*softfloatfun)(float64_t, float64_t)) {
     // movsd 8(%rsp), %xmm0
     emit_bytes(0xf2, 0x0f, 0x10, 0x44, 0x24, 0x08);
     // OPsd (%rsp), %xmm0
