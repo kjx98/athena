@@ -172,9 +172,7 @@ public:
     assert((char *)code <= (char *)epilogue_start + max_epilogue_size);
   }
 
-  void emit_unreachable() {
-    emit_error_handler(&on_unreachable);
-  }
+  void emit_unreachable() { emit_error_handler(&on_unreachable); }
   void emit_nop() {}
   void *emit_end() { return code; }
   void *emit_return(uint32_t depth_change) {
@@ -919,22 +917,12 @@ public:
 
   // --------------- i32 binops ----------------------
 
-  void emit_i32_add() {
-    emit_i32_binop(0x01, 0xc8, 0x50);
-  }
-  void emit_i32_sub() {
-    emit_i32_binop(0x29, 0xc8, 0x50);
-  }
-  void emit_i32_mul() {
-    emit_i32_binop(0x0f, 0xaf, 0xc1, 0x50);
-  }
+  void emit_i32_add() { emit_i32_binop(0x01, 0xc8, 0x50); }
+  void emit_i32_sub() { emit_i32_binop(0x29, 0xc8, 0x50); }
+  void emit_i32_mul() { emit_i32_binop(0x0f, 0xaf, 0xc1, 0x50); }
   // cdq; idiv %ecx; pushq %rax
-  void emit_i32_div_s() {
-    emit_i32_binop(0x99, 0xf7, 0xf9, 0x50);
-  }
-  void emit_i32_div_u() {
-    emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x50);
-  }
+  void emit_i32_div_s() { emit_i32_binop(0x99, 0xf7, 0xf9, 0x50); }
+  void emit_i32_div_u() { emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x50); }
   void emit_i32_rem_s() {
     // pop %rcx
     emit_bytes(0x59);
@@ -961,33 +949,15 @@ public:
     // push %rdx
     emit_bytes(0x52);
   }
-  void emit_i32_rem_u() {
-    emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x52);
-  }
-  void emit_i32_and() {
-    emit_i32_binop(0x21, 0xc8, 0x50);
-  }
-  void emit_i32_or() {
-    emit_i32_binop(0x09, 0xc8, 0x50);
-  }
-  void emit_i32_xor() {
-    emit_i32_binop(0x31, 0xc8, 0x50);
-  }
-  void emit_i32_shl() {
-    emit_i32_binop(0xd3, 0xe0, 0x50);
-  }
-  void emit_i32_shr_s() {
-    emit_i32_binop(0xd3, 0xf8, 0x50);
-  }
-  void emit_i32_shr_u() {
-    emit_i32_binop(0xd3, 0xe8, 0x50);
-  }
-  void emit_i32_rotl() {
-    emit_i32_binop(0xd3, 0xc0, 0x50);
-  }
-  void emit_i32_rotr() {
-    emit_i32_binop(0xd3, 0xc8, 0x50);
-  }
+  void emit_i32_rem_u() { emit_i32_binop(0x31, 0xd2, 0xf7, 0xf1, 0x52); }
+  void emit_i32_and() { emit_i32_binop(0x21, 0xc8, 0x50); }
+  void emit_i32_or() { emit_i32_binop(0x09, 0xc8, 0x50); }
+  void emit_i32_xor() { emit_i32_binop(0x31, 0xc8, 0x50); }
+  void emit_i32_shl() { emit_i32_binop(0xd3, 0xe0, 0x50); }
+  void emit_i32_shr_s() { emit_i32_binop(0xd3, 0xf8, 0x50); }
+  void emit_i32_shr_u() { emit_i32_binop(0xd3, 0xe8, 0x50); }
+  void emit_i32_rotl() { emit_i32_binop(0xd3, 0xc0, 0x50); }
+  void emit_i32_rotr() { emit_i32_binop(0xd3, 0xc8, 0x50); }
 
   // --------------- i64 unops ----------------------
 
@@ -1050,19 +1020,11 @@ public:
 
   // --------------- i64 binops ----------------------
 
-  void emit_i64_add() {
-    emit_i64_binop(0x48, 0x01, 0xc8, 0x50);
-  }
-  void emit_i64_sub() {
-    emit_i64_binop(0x48, 0x29, 0xc8, 0x50);
-  }
-  void emit_i64_mul() {
-    emit_i64_binop(0x48, 0x0f, 0xaf, 0xc1, 0x50);
-  }
+  void emit_i64_add() { emit_i64_binop(0x48, 0x01, 0xc8, 0x50); }
+  void emit_i64_sub() { emit_i64_binop(0x48, 0x29, 0xc8, 0x50); }
+  void emit_i64_mul() { emit_i64_binop(0x48, 0x0f, 0xaf, 0xc1, 0x50); }
   // cdq; idiv %rcx; pushq %rax
-  void emit_i64_div_s() {
-    emit_i64_binop(0x48, 0x99, 0x48, 0xf7, 0xf9, 0x50);
-  }
+  void emit_i64_div_s() { emit_i64_binop(0x48, 0x99, 0x48, 0xf7, 0xf9, 0x50); }
   void emit_i64_div_u() {
     emit_i64_binop(0x48, 0x31, 0xd2, 0x48, 0xf7, 0xf1, 0x50);
   }
@@ -1095,30 +1057,14 @@ public:
   void emit_i64_rem_u() {
     emit_i64_binop(0x48, 0x31, 0xd2, 0x48, 0xf7, 0xf1, 0x52);
   }
-  void emit_i64_and() {
-    emit_i64_binop(0x48, 0x21, 0xc8, 0x50);
-  }
-  void emit_i64_or() {
-    emit_i64_binop(0x48, 0x09, 0xc8, 0x50);
-  }
-  void emit_i64_xor() {
-    emit_i64_binop(0x48, 0x31, 0xc8, 0x50);
-  }
-  void emit_i64_shl() {
-    emit_i64_binop(0x48, 0xd3, 0xe0, 0x50);
-  }
-  void emit_i64_shr_s() {
-    emit_i64_binop(0x48, 0xd3, 0xf8, 0x50);
-  }
-  void emit_i64_shr_u() {
-    emit_i64_binop(0x48, 0xd3, 0xe8, 0x50);
-  }
-  void emit_i64_rotl() {
-    emit_i64_binop(0x48, 0xd3, 0xc0, 0x50);
-  }
-  void emit_i64_rotr() {
-    emit_i64_binop(0x48, 0xd3, 0xc8, 0x50);
-  }
+  void emit_i64_and() { emit_i64_binop(0x48, 0x21, 0xc8, 0x50); }
+  void emit_i64_or() { emit_i64_binop(0x48, 0x09, 0xc8, 0x50); }
+  void emit_i64_xor() { emit_i64_binop(0x48, 0x31, 0xc8, 0x50); }
+  void emit_i64_shl() { emit_i64_binop(0x48, 0xd3, 0xe0, 0x50); }
+  void emit_i64_shr_s() { emit_i64_binop(0x48, 0xd3, 0xf8, 0x50); }
+  void emit_i64_shr_u() { emit_i64_binop(0x48, 0xd3, 0xe8, 0x50); }
+  void emit_i64_rotl() { emit_i64_binop(0x48, 0xd3, 0xc0, 0x50); }
+  void emit_i64_rotr() { emit_i64_binop(0x48, 0xd3, 0xc8, 0x50); }
 
   // --------------- f32 unops ----------------------
 

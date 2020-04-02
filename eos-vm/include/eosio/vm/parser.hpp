@@ -266,6 +266,10 @@ public:
   void parse_memory_type(wasm_code_ptr &code, memory_type &mt) {
     mt.limits.flags = (parse_varuint32(code) & 0x1);
     mt.limits.initial = parse_varuint32(code);
+    // Implementation limits
+    EOS_VM_ASSERT(mt.limits.initial <= max_pages, wasm_parse_exception,
+                  "initial memory out of range");
+    // WASM specification
     EOS_VM_ASSERT(mt.limits.initial <= 65536u, wasm_parse_exception,
                   "initial memory out of range");
     if (mt.limits.flags) {
@@ -342,16 +346,12 @@ public:
     decltype(es.elems) elems = {_allocator, size};
     for (uint32_t i = 0; i < size; i++) {
       uint32_t index = parse_varuint32(code);
+      tt->table[es.offset.value.i32 + i] =
+          index; // FIXME: integer overflow?  Not possible because 0xFFFFFFFF is
+                 // never a valid table address???
       elems.at(i) = index;
       EOS_VM_ASSERT(index < _mod->get_functions_total(), wasm_parse_exception,
                     "elem for undefined function");
-    }
-    uint32_t offset = static_cast<uint32_t>(es.offset.value.i32);
-    if (static_cast<uint64_t>(size) + offset <= tt->table.size()) {
-      std::memcpy(tt->table.raw() + offset, elems.raw(),
-                  size * sizeof(uint32_t));
-    } else {
-      _mod->error = "elem out of range";
     }
     es.elems = std::move(elems);
   }

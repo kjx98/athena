@@ -25,7 +25,7 @@ namespace eosio {
 namespace vm {
 // helpers for std::visit
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template <class... Ts> overloaded(Ts...)->overloaded<Ts...>;
+template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 // helpers for handling void returns
 struct maybe_void_t {
