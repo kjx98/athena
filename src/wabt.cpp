@@ -516,7 +516,9 @@ ExecutionResult WabtEngine::execute(evmc::HostContext &context, bytes_view code,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
+#if H_DEBUGGING
       interface.debugPrintMem(true, args[0].value.i32, args[1].value.i32);
+#endif
       interface.eeiFinish(args[0].value.i32, args[1].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
