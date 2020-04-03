@@ -746,7 +746,9 @@ ExecutionResult WabtEngine::execute(evmc::HostContext &context, bytes_view code,
 
   // Execute main
   try {
-    interp::ExecResult wabtResult = executor.RunExport(
+    interp::ExecResult wabtResult = executor.Initialize(module);
+    ensureCondition(wabtResult.result.ok(), VMTrap, "VM initialize failed.");
+    wabtResult = executor.RunExport(
         mainFunction,
         interp::TypedValues{}); // second arg is empty since no args
     // Wrap any non-EEI exception under VMTrap.
