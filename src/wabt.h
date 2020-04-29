@@ -17,8 +17,11 @@
 #pragma once
 
 #include "eei.h"
+#include "lruCache.hpp"
 
 namespace athena {
+
+struct envCache_t;
 
 class WabtEngine : public WasmEngine {
 public:
@@ -28,6 +31,8 @@ public:
   ExecutionResult execute(evmc::HostContext &context, bytes_view code,
                           bytes_view state_code, evmc_message const &msg,
                           bool meterInterfaceGas) override;
+protected:
+    LRU::Cache<evmc::address,std::shared_ptr<envCache_t> >	codeCache;
 };
 
 } // namespace athena

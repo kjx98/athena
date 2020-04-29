@@ -50,6 +50,7 @@ public:
   ):
     EthereumInterface(_context, _code, _msg, _result, _meterGas)
   {}
+  WabtEthereumInterface(const WabtEthereumInterface& ) = default;
   void setEnv(interp::Environment *evP) {
 	envPtr = evP;
   }
@@ -79,6 +80,34 @@ private:
 
 unique_ptr<WasmEngine> WabtEngine::create() {
   return unique_ptr<WasmEngine>{new WabtEngine};
+}
+
+struct envCache_t {
+	envCache_t(WabtEthereumInterface* eeInt) : eei_(eeInt),
+			env_(Features{}) {}
+	WabtEthereumInterface*	eei_=nullptr;
+	interp::Environment env_;
+	interp::DefinedModule* module_;
+	bytes	code_;
+};
+
+static  shared_ptr<envCache_t>	envPtr;
+
+static inline interp::DefinedModule*
+instantiation(bytes_view code, const string stateMsg)
+{
+  // Parse module
+  ReadBinaryOptions options(Features{},
+                            nullptr, // debugging stream for loading
+                            false,   // ReadDebugNames
+                            true,    // StopOnFirstError
+                            true     // FailOnCustomSectionError
+  );
+  Errors errors;
+  interp::DefinedModule *module = nullptr;
+  Result loadResult = ReadBinaryInterp(&envPtr->env_, code.data(), code.size(), options,
+                                       &errors, &module);
+  return module;
 }
 
 ExecutionResult WabtEngine::execute(evmc::HostContext &context, bytes_view code,
