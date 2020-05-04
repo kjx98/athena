@@ -595,7 +595,7 @@ instantiation(bytes_view code, const string stateMsg,
 #if H_DEBUGGING
   // Create debug host module
   // The lifecycle of this pointer is handled by `env`.
-  hostModule = env.AppendHostModule("debug");
+  hostModule = envPtr->env_.AppendHostModule("debug");
   athenaAssert(hostModule, "Failed to create host module.");
 
   hostModule->AppendFuncExport(
