@@ -92,26 +92,27 @@ struct envCache_t {
 };
 
 
+// Set up the wabt Environment, which includes the Wasm store
+// and the list of modules used for importing/exporting between modules
+static	shared_ptr<envCache_t>  envPtr;
 static inline interp::DefinedModule*
-instantiation(bytes_view code, const string stateMsg,
-				shared_ptr<envCache_t>  envPtr)
+instantiation(bytes_view code, const string stateMsg)
 {
   // Create EEI host module
   // The lifecycle of this pointer is handled by `env`.
   interp::HostModule *hostModule = envPtr->env_.AppendHostModule("ethereum");
   athenaAssert(hostModule, "Failed to create host module.");
-  WabtEthereumInterface* eei_ = envPtr->eei_;
 
   hostModule->AppendFuncExport(
     "useGas",
     {{Type::I64}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiUseGas(static_cast<int64_t>(args[0].value.i64));
+      envPtr->eei_->eeiUseGas(static_cast<int64_t>(args[0].value.i64));
       return interp::ResultType::Ok;
     }
   );
@@ -119,13 +120,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getAddress",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiGetAddress(args[0].value.i32);
+      envPtr->eei_->eeiGetAddress(args[0].value.i32);
       return interp::ResultType::Ok;
     }
   );
@@ -133,13 +134,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getExternalBalance",
     {{Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiGetExternalBalance(args[0].value.i32, args[1].value.i32);
+      envPtr->eei_->eeiGetExternalBalance(args[0].value.i32, args[1].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -147,13 +148,14 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getBlockHash",
     {{Type::I64, Type::I32}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiGetBlockHash(args[0].value.i64, args[1].value.i32));
+      results[0].set_i32(envPtr->eei_->eeiGetBlockHash(
+						args[0].value.i64, args[1].value.i32));
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -161,13 +163,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "call",
     {{Type::I64, Type::I32, Type::I32, Type::I32, Type::I32}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiCall(
+      results[0].set_i32(envPtr->eei_->eeiCall(
         EthereumInterface::EEICallKind::Call,
         static_cast<int64_t>(args[0].value.i64), args[1].value.i32,
         args[2].value.i32, args[3].value.i32, args[4].value.i32
@@ -179,13 +181,14 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "callDataCopy",
     {{Type::I32, Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiCallDataCopy(args[0].value.i32, args[1].value.i32, args[2].value.i32);
+      envPtr->eei_->eeiCallDataCopy(
+				args[0].value.i32, args[1].value.i32, args[2].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -193,13 +196,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getCallDataSize",
     {{}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues&,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiGetCallDataSize());
+      results[0].set_i32(envPtr->eei_->eeiGetCallDataSize());
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -207,13 +210,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "callCode",
     {{Type::I64, Type::I32, Type::I32, Type::I32, Type::I32}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiCall(
+      results[0].set_i32(envPtr->eei_->eeiCall(
         EthereumInterface::EEICallKind::CallCode,
         static_cast<int64_t>(args[0].value.i64), args[1].value.i32,
         args[2].value.i32, args[3].value.i32, args[4].value.i32
@@ -225,13 +228,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "callDelegate",
     {{Type::I64, Type::I32, Type::I32, Type::I32}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiCall(
+      results[0].set_i32(envPtr->eei_->eeiCall(
         EthereumInterface::EEICallKind::CallDelegate,
         static_cast<int64_t>(args[0].value.i64), args[1].value.i32, 0,
         args[2].value.i32, args[3].value.i32
@@ -243,13 +246,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "callStatic",
     {{Type::I64, Type::I32, Type::I32, Type::I32}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiCall(
+      results[0].set_i32(envPtr->eei_->eeiCall(
         EthereumInterface::EEICallKind::CallStatic,
         static_cast<int64_t>(args[0].value.i64), args[1].value.i32, 0,
         args[2].value.i32, args[3].value.i32
@@ -261,13 +264,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "storageStore",
     {{Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiStorageStore(args[0].value.i32, args[1].value.i32);
+      envPtr->eei_->eeiStorageStore(args[0].value.i32, args[1].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -275,13 +278,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "storageLoad",
     {{Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiStorageLoad(args[0].value.i32, args[1].value.i32);
+      envPtr->eei_->eeiStorageLoad(args[0].value.i32, args[1].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -289,13 +292,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getCaller",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiGetCaller(args[0].value.i32);
+      envPtr->eei_->eeiGetCaller(args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -303,13 +306,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getCallValue",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiGetCallValue(args[0].value.i32);
+      envPtr->eei_->eeiGetCallValue(args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -317,13 +320,14 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "codeCopy",
     {{Type::I32, Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiCodeCopy(args[0].value.i32, args[1].value.i32, args[2].value.i32);
+      envPtr->eei_->eeiCodeCopy(args[0].value.i32, args[1].value.i32,
+					  args[2].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -331,13 +335,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getCodeSize",
     {{}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues&,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiGetCodeSize());
+      results[0].set_i32(envPtr->eei_->eeiGetCodeSize());
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -345,13 +349,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getBlockCoinbase",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiGetBlockCoinbase(args[0].value.i32);
+      envPtr->eei_->eeiGetBlockCoinbase(args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -359,13 +363,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "create",
     {{Type::I32, Type::I32, Type::I32, Type::I32}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiCreate(
+      results[0].set_i32(envPtr->eei_->eeiCreate(
         args[0].value.i32, args[1].value.i32,
         args[2].value.i32, args[3].value.i32
       ));
@@ -376,13 +380,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getBlockDifficulty",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiGetBlockDifficulty(args[0].value.i32);
+      envPtr->eei_->eeiGetBlockDifficulty(args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -390,13 +394,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "externalCodeCopy",
     {{Type::I32, Type::I32, Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiExternalCodeCopy(
+      envPtr->eei_->eeiExternalCodeCopy(
         args[0].value.i32, args[1].value.i32,
         args[2].value.i32, args[3].value.i32
       );
@@ -407,13 +411,14 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getExternalCodeSize",
     {{Type::I32}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiGetExternalCodeSize(args[0].value.i32));
+      results[0].set_i32(envPtr->eei_->eeiGetExternalCodeSize(
+						args[0].value.i32));
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -421,13 +426,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getGasLeft",
     {{}, {Type::I64}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues&,
       interp::TypedValues& results
     ) {
-      results[0].set_i64(static_cast<uint64_t>(eei_->eeiGetGasLeft()));
+      results[0].set_i64(static_cast<uint64_t>(envPtr->eei_->eeiGetGasLeft()));
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -435,13 +440,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getBlockGasLimit",
     {{}, {Type::I64}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues&,
       interp::TypedValues& results
     ) {
-      results[0].set_i64(static_cast<uint64_t>(eei_->eeiGetBlockGasLimit()));
+      results[0].set_i64(static_cast<uint64_t>(envPtr->eei_->eeiGetBlockGasLimit()));
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -449,13 +454,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getTxGasPrice",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiGetTxGasPrice(args[0].value.i32);
+      envPtr->eei_->eeiGetTxGasPrice(args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -463,14 +468,14 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "log",
     {{Type::I32, Type::I32, Type::I32, Type::I32, Type::I32, Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiLog(
-        args[0].value.i32, args[1].value.i32, args[2].value.i32, args[3].value.i32,
+      envPtr->eei_->eeiLog( args[0].value.i32, args[1].value.i32,
+		args[2].value.i32, args[3].value.i32,
         args[4].value.i32, args[5].value.i32, args[6].value.i32
       );
       return interp::Result(interp::ResultType::Ok);
@@ -480,13 +485,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getBlockNumber",
     {{}, {Type::I64}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues&,
       interp::TypedValues& results
     ) {
-      results[0].set_i64(static_cast<uint64_t>(eei_->eeiGetBlockNumber()));
+      results[0].set_i64(static_cast<uint64_t>(envPtr->eei_->eeiGetBlockNumber()));
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -494,13 +499,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getTxOrigin",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiGetTxOrigin(args[0].value.i32);
+      envPtr->eei_->eeiGetTxOrigin(args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -508,16 +513,16 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "finish",
     {{Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
 #if H_DEBUGGING
-      eei_->debugPrintMem(true, args[0].value.i32, args[1].value.i32);
+      envPtr->eei_->debugPrintMem(true, args[0].value.i32, args[1].value.i32);
 #endif
-      eei_->eeiFinish(args[0].value.i32, args[1].value.i32);
+      envPtr->eei_->eeiFinish(args[0].value.i32, args[1].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -525,13 +530,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "revert",
     {{Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiRevert(args[0].value.i32, args[1].value.i32);
+      envPtr->eei_->eeiRevert(args[0].value.i32, args[1].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -539,13 +544,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getReturnDataSize",
     {{}, {Type::I32}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues&,
       interp::TypedValues& results
     ) {
-      results[0].set_i32(eei_->eeiGetReturnDataSize());
+      results[0].set_i32(envPtr->eei_->eeiGetReturnDataSize());
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -553,13 +558,14 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "returnDataCopy",
     {{Type::I32, Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiReturnDataCopy(args[0].value.i32, args[1].value.i32, args[2].value.i32);
+      envPtr->eei_->eeiReturnDataCopy(args[0].value.i32, args[1].value.i32,
+					  args[2].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -567,13 +573,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "selfDestruct",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->eeiSelfDestruct(args[0].value.i32);
+      envPtr->eei_->eeiSelfDestruct(args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -581,13 +587,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "getBlockTimestamp",
     {{}, {Type::I64}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues&,
       interp::TypedValues& results
     ) {
-      results[0].set_i64(static_cast<uint64_t>(eei_->eeiGetBlockTimestamp()));
+      results[0].set_i64(static_cast<uint64_t>(envPtr->eei_->eeiGetBlockTimestamp()));
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -601,13 +607,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "print",
     {{Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->debugPrint(args[0].value.i32, args[1].value.i32);
+      envPtr->eei_->debugPrint(args[0].value.i32, args[1].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -615,13 +621,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "print32",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->debugPrint32(args[0].value.i32);
+      envPtr->eei_->debugPrint32(args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -629,13 +635,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "print64",
     {{Type::I64}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->debugPrint64(args[0].value.i64);
+      envPtr->eei_->debugPrint64(args[0].value.i64);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -643,13 +649,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "printMem",
     {{Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->debugPrintMem(false, args[0].value.i32, args[1].value.i32);
+      envPtr->eei_->debugPrintMem(false, args[0].value.i32, args[1].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -657,13 +663,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "printMemHex",
     {{Type::I32, Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->debugPrintMem(true, args[0].value.i32, args[1].value.i32);
+      envPtr->eei_->debugPrintMem(true, args[0].value.i32, args[1].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -671,13 +677,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "printStorage",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->debugPrintStorage(false, args[0].value.i32);
+      envPtr->eei_->debugPrintStorage(false, args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -685,13 +691,13 @@ instantiation(bytes_view code, const string stateMsg,
   hostModule->AppendFuncExport(
     "printStorageHex",
     {{Type::I32}, {}},
-    [eei_](
+    [](
       const interp::HostFunc*,
       const interp::FuncSignature*,
       const interp::TypedValues& args,
       interp::TypedValues&
     ) {
-      eei_->debugPrintStorage(true, args[0].value.i32);
+      envPtr->eei_->debugPrintStorage(true, args[0].value.i32);
       return interp::Result(interp::ResultType::Ok);
     }
   );
@@ -726,9 +732,6 @@ ExecutionResult WabtEngine::execute(evmc::HostContext &context, bytes_view code,
   H_DEBUG << "Executing with wabt...\n";
 #endif
 
-  // Set up the wabt Environment, which includes the Wasm store
-  // and the list of modules used for importing/exporting between modules
-  shared_ptr<envCache_t>  envPtr;
 
   // Set up interface to eei host functions
   ExecutionResult result;
@@ -742,7 +745,7 @@ ExecutionResult WabtEngine::execute(evmc::HostContext &context, bytes_view code,
 #if H_DEBUGGING
 	H_DEBUG << "instantiation with wabt...\n";
 #endif
-	module = instantiation(envPtr->code_, "wabt (execute): ", envPtr);
+	module = instantiation(envPtr->code_, "wabt (execute): ");
 	if (module != nullptr) {
 		envPtr->module_ = module;
 		// cache it
@@ -797,6 +800,7 @@ ExecutionResult WabtEngine::execute(evmc::HostContext &context, bytes_view code,
     // It is only a clutch for POSIX style exit()
   }
 
+  envPtr->eei_ = nullptr;
   executionFinished();
   return result;
 }
