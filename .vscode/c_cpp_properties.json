@@ -5,10 +5,11 @@
             "includePath": [
                 ".",
                 "${workspaceFolder}/include",
-				"${workspaceFolder}/eos-vm/include"
+                "${workspaceFolder}/eos-vm/include"
             ],
             "cppStandard": "c++17",
-            "cStandard": "c11"
+            "cStandard": "c11",
+            "compileCommands": "${workspaceFolder}/build/wabt-build/compile_commands.json"
         }
     ],
     "version": 4

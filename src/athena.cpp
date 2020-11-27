@@ -18,7 +18,7 @@
 
 #include <csignal>
 #include <cstring>
-#include <execinfo.h>
+//#include <execinfo.h>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -521,6 +521,7 @@ evmc_capabilities_flagset athena_get_capabilities(evmc_vm *instance) {
 
 } // anonymous namespace
 
+#ifdef	ommit
 void sig_core(int sig) {
   const int BT_BUF_SIZE = 100;
   if (sig == SIGBUS || sig == SIGSEGV) {
@@ -541,15 +542,18 @@ void sig_core(int sig) {
   }
   std::abort();
 }
+#endif
 
 extern "C" {
 
 EVMC_EXPORT evmc_vm *evmc_create_athena() noexcept {
+#ifdef	ommit
   auto prev_hdl = std::signal(SIGSEGV, sig_core);
   if (prev_hdl == SIG_ERR) {
     cerr << "setup SIGSEGV failed\n";
     return nullptr;
   }
+#endif
   athena_instance *instance = new athena_instance;
   instance->destroy = athena_destroy;
   instance->execute = athena_execute;
